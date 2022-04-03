@@ -11,6 +11,20 @@ __kernel void rgbToGray(__read_write image2d_t srcImage)
     write_imageui(srcImage, pos, pixel);
 }
 
+__kernel void rgb2gray(__global uchar* src, __global uchar* dest, int width, int height)
+{
+	/*const int x = get_global_id(0);
+	const int y = get_global_id(1);
+	
+	float sum = 0.299f * src_data[i * width + x + 1] +
+				0.587f * src_data[i * width + x + 2] +
+				0.114f * src_data[i * width + x + 3];
+	uchar color = (uchar)(sum/3.0f);
+	
+	dst[i * width + x] = 255;
+	dst[i * width + x + 1] = dst[i * width + x + 2] = dst[i * width + x + 3] = color;*/
+}
+
 /*__kernel void rgbToGray(__read_write image2d_t srcImage)
 {
 	printf("siema");
