@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <vector>
 #include <QFile>
@@ -34,6 +36,21 @@ struct GprData
     std::vector<DataType> data;
 
 private:
+    class QTextStreamWrapper : public QTextStream
+    {
+    public:
+        QTextStreamWrapper(QIODevice* device)
+            : QTextStream(device) {}
+        QString readLine()
+        {
+            lineCount++;
+            return QTextStream::readLine();
+        }
+        std::uint32_t getLineCount() { return lineCount; }
+    private:
+        std::uint32_t lineCount{0u};
+    };
+
     void readData(QTextStreamWrapper&);
 };
 

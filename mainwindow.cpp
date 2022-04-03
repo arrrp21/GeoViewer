@@ -7,9 +7,10 @@
 #include <QImage>
 #include <QColorTransform>
 #include <QScrollBar>
+#include <ios>
 
 #include "GprData.hpp"
-#include <ios>
+#include <gprDataToQImage.hpp>
 
 #define CL_HPP_MINIMUM_OPENCL_VERSION 200
 #define CL_HPP_TARGET_OPENCL_VERSION 200
@@ -82,11 +83,18 @@ void MainWindow::on_actionOpenTriggered(bool)
     {
         GprData gprData{file};
         qDebug() << gprData;
+        qDebug() << "test1";
+        QImage newImage = gprDataToQImage(gprData); // data MUSI BYĆ DOSTĘPNE przez cały czas życia image
+        image = std::move(newImage);
+        imageLabel->setPixmap(QPixmap::fromImage(image));
+        imageLabel->adjustSize();
+        scrollArea->setVisible(true);
     }
     catch(std::exception& e)
     {
         qDebug() << e.what();
     }
+
 
     /*QImage newImage(fileName);
     if (newImage.isNull())

@@ -11,13 +11,10 @@ GprData::GprData(QFile& file)
     }
 
     QTextStreamWrapper inputTextStream(&file);
-    //QTextStream inputTextStream(&file);
 
     while (not inputTextStream.atEnd())
     {
         QString parameterName{inputTextStream.readLine()};
-        //qDebug() << "Read parameter name: " << parameterName.isNull();
-        //qDebug() << "Parameter name: " << parameterName;
 
         bool isOk;
         if (parameterName == "RANGE")

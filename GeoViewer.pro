@@ -22,6 +22,7 @@ INCLUDEPATH += "$$PWD/CL" \
 HEADERS += \
     GprData.hpp \
     ImageLabel.hpp \
+    gprDataToQImage.hpp \
     mainwindow.h \
     $$files(*.h, true) \
     $$PWD/CL/cl2.hpp \
