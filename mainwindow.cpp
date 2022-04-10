@@ -10,7 +10,8 @@
 #include <ios>
 
 #include "GprData.hpp"
-#include <gprDataToQImage.hpp>
+#include "QImageWrapper.hpp"
+#include "CommonImageTransformer.hpp"
 
 #define CL_HPP_MINIMUM_OPENCL_VERSION 200
 #define CL_HPP_TARGET_OPENCL_VERSION 200
@@ -32,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->actionOpen,      SIGNAL(triggered(bool)),        this, SLOT(on_actionOpenTriggered(bool))        );
     connect(ui->actionGrayscale, SIGNAL(triggered(bool)),        this, SLOT(on_actionGrayscaleTriggered(bool))   );
+    connect(ui->actionRotate_90, SIGNAL(triggered(bool)),        this, SLOT(on_actionRotate_90Triggered(bool))   );
     connect(imageLabel,          SIGNAL(mouseWheelUsed(QPoint)), this, SLOT(on_mouseWheelUsed(QPoint))           );
     connect(imageLabel,          SIGNAL(mouseMoved(int,int)),    this, SLOT(on_mouseMoved(int,int))              );
 
@@ -69,6 +71,9 @@ void MainWindow::adjustScrollBar(QScrollBar *scrollBar, float factor)
     scrollBar->setValue(static_cast<int>(factor * scrollBar->value() + ((factor -1) * scrollBar->pageStep()/2)));
 }
 
+template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
+template<class... Ts> overload(Ts...) -> overload<Ts...>;
+
 void MainWindow::on_actionOpenTriggered(bool)
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Choose file"), "./", tr("Profiles (*.asc);;Images (*.jpg *.png *.bmp)"));
@@ -79,22 +84,27 @@ void MainWindow::on_actionOpenTriggered(bool)
         return;
 
     QFile file(fileName);
-    try
-    {
-        GprData gprData{file};
-        qDebug() << gprData;
-        qDebug() << "test1";
-        QImage newImage = gprDataToQImage(gprData); // data MUSI BYĆ DOSTĘPNE przez cały czas życia image
-        image = std::move(newImage);
-        imageLabel->setPixmap(QPixmap::fromImage(image));
-        imageLabel->adjustSize();
-        scrollArea->setVisible(true);
-    }
-    catch(std::exception& e)
-    {
-        qDebug() << e.what();
-    }
 
+    std::variant<GprData, QString> maybeGprData = tryCreateGprData(file);
+
+    std::visit(overload{[this](GprData& gprData) {
+            imageWrapper = std::make_unique<QImageWrapper>(gprData);
+            imageTransformer = std::make_unique<CommonImageTransformer>(*imageWrapper);
+            imageTransformer->rotate90();
+            imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
+            imageLabel->adjustSize();
+            scrollArea->setVisible(true);
+        },
+        [](QString& error) {
+            QMessageBox messageBox;
+            messageBox.setText(error);
+            messageBox.exec();
+        }},
+        maybeGprData);
+
+    /*uchar* aa = imageWrapper->rawData.getData();
+    for (int i = 0; i < 10; i++)
+        qDebug() << aa[i];*/
 
     /*QImage newImage(fileName);
     if (newImage.isNull())
@@ -201,6 +211,14 @@ void MainWindow::on_actionGrayscaleTriggered(bool)
     QImage newImage(outputBits, image.width(), image.height(), image.bytesPerLine(), image.format());
     image = std::move(newImage);
     imageLabel->setPixmap(QPixmap::fromImage(image));
+}
+
+void MainWindow::on_actionRotate_90Triggered(bool)
+{
+    imageTransformer->rotate90();
+    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
+    imageLabel->adjustSize();
+    scrollArea->setVisible(true);
 }
 
 /*void MainWindow::on_actionGrayscaleTriggered(bool)

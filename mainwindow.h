@@ -12,6 +12,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
 
+class QImageWrapper;
+class ImageTransformer;
 
 class MainWindow : public QMainWindow
 {
@@ -23,6 +25,8 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    std::unique_ptr<ImageTransformer> imageTransformer;
+    std::unique_ptr<QImageWrapper> imageWrapper;
     QImage image;
     ImageLabel* imageLabel;
     QScrollArea* scrollArea;
@@ -45,6 +49,7 @@ private:
 public slots:
     void on_actionOpenTriggered(bool);
     void on_actionGrayscaleTriggered(bool);
+    void on_actionRotate_90Triggered(bool);
     void on_mouseWheelUsed(QPoint angleDelta);
     void on_mouseMoved(int x, int y);
 };

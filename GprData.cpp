@@ -3,14 +3,60 @@
 #include <QTextStream>
 #include <QDebug>
 
-GprData::GprData(QFile& file)
+class QTextStreamWrapper : public QTextStream
+{
+public:
+    QTextStreamWrapper(QIODevice* device)
+        : QTextStream(device) {}
+    QString readLine()
+    {
+        lineCount++;
+        return QTextStream::readLine();
+    }
+    std::uint32_t getLineCount() { return lineCount; }
+private:
+    std::uint32_t lineCount{0u};
+};
+
+std::optional<QString> readData(
+    QTextStreamWrapper& inputTextStream,
+    std::uint32_t N_ACQ_SAMPLE,
+    std::uint32_t N_ACQ_SWEEP,
+    std::vector<GprData::DataType>& data)
+{
+    if (N_ACQ_SAMPLE > 0 and N_ACQ_SWEEP > 0)
+        data.reserve(N_ACQ_SAMPLE * N_ACQ_SWEEP);
+
+    bool isOk;
+    while (not inputTextStream.atEnd())
+    {
+        QString strValue{inputTextStream.readLine()};
+        GprData::DataType value{static_cast<GprData::DataType>(strValue.toInt(&isOk) + std::numeric_limits<std::int16_t>::max())};
+        if (not isOk)
+        {
+            return QString("Invalid DATA value (line: %1)").arg(inputTextStream.getLineCount());
+        }
+        data.push_back(value);
+    }
+
+    return std::nullopt;
+}
+
+std::variant<GprData, QString> tryCreateGprData(QFile& file)
 {
     if (not file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        throw std::ios_base::failure("Couldn't open a file");
+        return "Couldn't open a file";
     }
 
     QTextStreamWrapper inputTextStream(&file);
+
+    double RANGE = 0;
+    double PROP_VEL = 0;
+    std::uint32_t N_ACQ_SAMPLE = 0;
+    std::uint32_t N_ACQ_SWEEP = 0;
+    double X_STEP = 0;
+    std::vector<GprData::DataType> data;
 
     while (not inputTextStream.atEnd())
     {
@@ -23,9 +69,8 @@ GprData::GprData(QFile& file)
             RANGE = range.toDouble(&isOk);
             if (not isOk)
             {
-                std::string what{
-                    QString("Invalid RANGE value (line: %1)").arg(inputTextStream.getLineCount()).toStdString()};
-                throw std::invalid_argument(what);
+                file.close();
+                return QString("Invalid RANGE value (line: %1)").arg(inputTextStream.getLineCount());
             }
         }
 
@@ -35,9 +80,8 @@ GprData::GprData(QFile& file)
             PROP_VEL = propVel.toDouble(&isOk);
             if (not isOk)
             {
-                std::string what{
-                    QString("Invalid PROP_VEL value (line: %1)").arg(inputTextStream.getLineCount()).toStdString()};
-                throw std::invalid_argument(what);
+                file.close();
+                return QString("Invalid PROP_VEL value (line: %1)").arg(inputTextStream.getLineCount());
             }
         }
 
@@ -47,9 +91,8 @@ GprData::GprData(QFile& file)
             N_ACQ_SAMPLE = nAcqSample.toDouble(&isOk);
             if (not isOk)
             {
-                std::string what{
-                    QString("Invalid N_ACQ_SAMPLE value (line: %1)").arg(inputTextStream.getLineCount()).toStdString()};
-                throw std::invalid_argument(what);
+                file.close();
+                return QString("Invalid N_ACQ_SAMPLE value (line: %1)").arg(inputTextStream.getLineCount());
             }
         }
 
@@ -59,9 +102,8 @@ GprData::GprData(QFile& file)
             N_ACQ_SWEEP = nAcqSweep.toDouble(&isOk);
             if (not isOk)
             {
-                std::string what{
-                    QString("Invalid N_ACQ_SWEEP value (line: %1)").arg(inputTextStream.getLineCount()).toStdString()};
-                throw std::invalid_argument(what);
+                file.close();
+                return QString("Invalid N_ACQ_SWEEP value (line: %1)").arg(inputTextStream.getLineCount());
             }
         }
 
@@ -71,38 +113,51 @@ GprData::GprData(QFile& file)
             X_STEP = xStep.toDouble(&isOk);
             if (not isOk)
             {
-                std::string what{
-                    QString("Invalid X_STEP value (line: %1)").arg(inputTextStream.getLineCount()).toStdString()};
-                throw std::invalid_argument(what);
+                file.close();
+                return QString("Invalid X_STEP value (line: %1)").arg(inputTextStream.getLineCount());
             }
         }
 
         if (parameterName == "DATA")
         {
-            readData(inputTextStream);
+            std::optional<QString> errorString = readData(inputTextStream, N_ACQ_SAMPLE, N_ACQ_SWEEP, data);
+            if (errorString)
+            {
+                file.close();
+                return *errorString;
+            }
         }
     }
 
     file.close();
+    return GprData(RANGE, PROP_VEL, N_ACQ_SAMPLE, N_ACQ_SWEEP, std::move(data));
 }
 
-void GprData::readData(QTextStreamWrapper& inputTextStream)
+GprData::GprData(double RANGE, double PROP_VEL, uint32_t N_ACQ_SAMPLE, uint32_t N_ACQ_SWEEP, std::vector<DataType> &&data)
+    : RANGE{RANGE}
+    , PROP_VEL{PROP_VEL}
+    , N_ACQ_SAMPLE{N_ACQ_SAMPLE}
+    , N_ACQ_SWEEP{N_ACQ_SWEEP}
+    , data(std::move(data))
 {
-    if (N_ACQ_SAMPLE > 0 and N_ACQ_SWEEP > 0)
-        data.reserve(N_ACQ_SAMPLE * N_ACQ_SWEEP);
+}
 
-    bool isOk;
-    while (not inputTextStream.atEnd())
-    {
-        QString value{inputTextStream.readLine()};
-        data.push_back(value.toInt(&isOk));
-        if (not isOk)
-        {
-            std::string what{
-                QString("Invalid DATA value (line: %1)").arg(inputTextStream.getLineCount()).toStdString()};
-            throw std::invalid_argument(what);
-        }
-    }
+GprData::GprData(GprData&& other)
+    : RANGE{other.RANGE}
+    , PROP_VEL{other.PROP_VEL}
+    , N_ACQ_SAMPLE{other.N_ACQ_SAMPLE}
+    , N_ACQ_SWEEP{other.N_ACQ_SWEEP}
+    , data(std::move(other.data))
+{
+}
+
+GprData& GprData::operator=(GprData&& other)
+{
+    RANGE = other.RANGE;
+    PROP_VEL = other.PROP_VEL;
+    N_ACQ_SAMPLE = other.N_ACQ_SAMPLE;
+    N_ACQ_SWEEP = other.N_ACQ_SWEEP;
+    data = std::move(other.data);
 }
 
 QDebug operator<<(QDebug debug, const GprData& gprData)
@@ -112,3 +167,4 @@ QDebug operator<<(QDebug debug, const GprData& gprData)
 
     return debug;
 }
+

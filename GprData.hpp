@@ -5,27 +5,22 @@
 #include <QFile>
 #include <QTextStream>
 #include <ostream>
+#include <variant>
+#include <QDebug>
 
-class QTextStreamWrapper : public QTextStream
-{
-public:
-    QTextStreamWrapper(QIODevice* device)
-        : QTextStream(device) {}
-    QString readLine()
-    {
-        lineCount++;
-        return QTextStream::readLine();
-    }
-    std::uint32_t getLineCount() { return lineCount; }
-private:
-    std::uint32_t lineCount{0u};
-};
+struct GprData;
+std::variant<GprData, QString> tryCreateGprData(QFile&);
 
 struct GprData
 {
-    GprData(QFile& file);
+    using DataType = std::uint16_t;
 
-    using DataType = int;
+    GprData() = delete;
+    GprData(double, double, std::uint32_t, std::uint32_t, std::vector<DataType>&&);
+    GprData(const GprData&) = delete;
+    GprData(GprData&&);
+    GprData& operator=(const GprData&) = delete;
+    GprData& operator=(GprData&&);
 
     double RANGE;
     double PROP_VEL;
@@ -34,24 +29,6 @@ struct GprData
     double X_STEP;
 
     std::vector<DataType> data;
-
-private:
-    class QTextStreamWrapper : public QTextStream
-    {
-    public:
-        QTextStreamWrapper(QIODevice* device)
-            : QTextStream(device) {}
-        QString readLine()
-        {
-            lineCount++;
-            return QTextStream::readLine();
-        }
-        std::uint32_t getLineCount() { return lineCount; }
-    private:
-        std::uint32_t lineCount{0u};
-    };
-
-    void readData(QTextStreamWrapper&);
 };
 
 QDebug operator<<(QDebug debug, const GprData&);
