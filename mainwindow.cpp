@@ -35,6 +35,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionGrayscale, SIGNAL(triggered(bool)),        this, SLOT(on_actionGrayscaleTriggered(bool))   );
     connect(ui->actionRotate_90, SIGNAL(triggered(bool)),        this, SLOT(on_actionRotate_90Triggered(bool))   );
     connect(imageLabel,          SIGNAL(mouseWheelUsed(QPoint)), this, SLOT(on_mouseWheelUsed(QPoint))           );
+    connect(imageLabel,          SIGNAL(mousePressedMoved(int,int)),this, SLOT(on_mousePressedMoved(int,int))              );
     connect(imageLabel,          SIGNAL(mouseMoved(int,int)),    this, SLOT(on_mouseMoved(int,int))              );
 
     imageLabel->setBackgroundRole(QPalette::Base);
@@ -90,7 +91,7 @@ void MainWindow::on_actionOpenTriggered(bool)
     std::visit(overload{[this](GprData& gprData) {
             imageWrapper = std::make_unique<QImageWrapper>(gprData);
             imageTransformer = std::make_unique<CommonImageTransformer>(*imageWrapper);
-            imageTransformer->rotate90();
+            //imageTransformer->rotate90();
             imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
             imageLabel->adjustSize();
             scrollArea->setVisible(true);
@@ -280,9 +281,9 @@ void MainWindow::on_mouseWheelUsed(QPoint angleDelta)
     scaleImage(factor);
 }
 
-void MainWindow::on_mouseMoved(int x, int y)
+void MainWindow::on_mousePressedMoved(int x, int y)
 {
-    if (x not_eq 0)
+    if (x != 0)
     {
         QScrollBar* horizontalScrollBar = scrollArea->horizontalScrollBar();
         int currentValue = horizontalScrollBar->value();
@@ -295,4 +296,9 @@ void MainWindow::on_mouseMoved(int x, int y)
         int currentValue = verticallScrollBar->value();
         verticallScrollBar->setValue(currentValue + y);
     };
+}
+
+void MainWindow::on_mouseMoved(int x, int y)
+{
+    ui->statusbar->showMessage(QString("x: %1  y: %2").arg(x).arg(y));
 }

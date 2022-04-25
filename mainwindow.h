@@ -51,5 +51,6 @@ public slots:
     void on_actionGrayscaleTriggered(bool);
     void on_actionRotate_90Triggered(bool);
     void on_mouseWheelUsed(QPoint angleDelta);
+    void on_mousePressedMoved(int x, int y);
     void on_mouseMoved(int x, int y);
 };

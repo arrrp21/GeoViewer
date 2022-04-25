@@ -6,9 +6,7 @@ class ImageLabel : public QLabel
 {
     Q_OBJECT
 public:
-    ImageLabel(QWidget* parent = nullptr)
-        : QLabel(parent)
-    {}
+    ImageLabel(QWidget* parent = nullptr);
 
 public:
     virtual void mouseMoveEvent(QMouseEvent* event);
@@ -18,9 +16,11 @@ public:
 
 private:
     QPoint currentCursorPosition;
+    bool isMousePressed;
 
 signals:
     void mouseWheelUsed(QPoint angleDelta);
+    void mousePressedMoved(int x, int y);
     void mouseMoved(int x, int y);
     void mousePressed();
 };

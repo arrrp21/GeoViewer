@@ -1,21 +1,35 @@
 #include "ImageLabel.hpp"
 
 
-void ImageLabel::mouseMoveEvent(QMouseEvent *event)
+ImageLabel::ImageLabel(QWidget* parent)
+    : QLabel(parent)
 {
-    QPoint displacement = currentCursorPosition - event->globalPosition().toPoint();
-    currentCursorPosition = event->globalPosition().toPoint();
-    emit mouseMoved(displacement.x(), displacement.y());
+    setMouseTracking(true);
 }
 
-void ImageLabel::mousePressEvent([[maybe_unused]] QMouseEvent *event)
+void ImageLabel::mouseMoveEvent(QMouseEvent *event)
+{
+    QPoint newPosition = event->globalPosition().toPoint();
+    if (isMousePressed)
+    {
+        QPoint displacement = currentCursorPosition - newPosition;
+        emit mousePressedMoved(displacement.x(), displacement.y());
+    }
+    currentCursorPosition = newPosition;
+    QPoint relativePosition = event->pos();
+    emit mouseMoved(relativePosition.x(), relativePosition.y());
+}
+
+void ImageLabel::mousePressEvent(QMouseEvent *event)
 {
     currentCursorPosition = event->globalPosition().toPoint();
+    isMousePressed = true;
     setCursor(Qt::ClosedHandCursor);
 }
 
-void ImageLabel::mouseReleaseEvent([[maybe_unused]] QMouseEvent *event)
+void ImageLabel::mouseReleaseEvent(QMouseEvent*)
 {
+    isMousePressed = false;
     setCursor(Qt::ArrowCursor);
 }
 

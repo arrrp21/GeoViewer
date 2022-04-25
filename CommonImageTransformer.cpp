@@ -20,7 +20,7 @@ void CommonImageTransformer::rotate90()
 
     for (int h = 0; h < newHeight; h++)
         for (int w = 0; w < newWidth; w++)
-            castedNewData[h * newWidth + w] = castedOldData[w * newHeight + h];
+            castedNewData[h * newWidth + w] = castedOldData[(newWidth - w - 1) * newHeight + h];
 
     imageWrapper.setNewImage(
         QImage(newData.getData(), newWidth, newHeight, newWidth * sizeof(GprData::DataType), QImage::Format_Grayscale16),
