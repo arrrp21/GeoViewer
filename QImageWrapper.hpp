@@ -14,6 +14,7 @@ public:
     QImageWrapper& operator=(const QImageWrapper&) = delete;
     QImageWrapper& operator=(QImageWrapper&&) = delete;
 
+    GprData::DataType getColor(int x, int y);
     const QImage& getImage();
     void setNewImage(QImage&&, Span&&);
 

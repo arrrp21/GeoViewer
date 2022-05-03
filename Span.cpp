@@ -14,6 +14,12 @@ uchar& Span::operator[](std::size_t index)
     return data[index];
 }
 
+Span::~Span()
+{
+    delete [] data;
+    size = 0u;
+}
+
 Span::Span(std::size_t sizeInBytes)
     : size(sizeInBytes)
 {

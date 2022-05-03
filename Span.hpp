@@ -20,10 +20,7 @@ public:
 
     uchar& operator[](std::size_t index);
 
-    ~Span()
-    {
-        delete [] data;
-    }
+    ~Span();
 private:
     uchar* data = nullptr;
     std::size_t size{0};

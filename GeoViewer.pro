@@ -29,6 +29,7 @@ HEADERS += \
     ImageTransformer.hpp \
     QImageWrapper.hpp \
     Span.hpp \
+    Visitor.hpp \
     mainwindow.h \
     $$files(*.h, true) \
     $$PWD/CL/cl2.hpp \

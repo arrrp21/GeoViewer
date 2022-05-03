@@ -7,11 +7,16 @@
 #include <QImage>
 #include <QColorTransform>
 #include <QScrollBar>
+#include <QVBoxLayout>
+#include <QSlider>
+
 #include <ios>
+#include <cmath>
 
 #include "GprData.hpp"
 #include "QImageWrapper.hpp"
 #include "CommonImageTransformer.hpp"
+#include "Visitor.hpp"
 
 #define CL_HPP_MINIMUM_OPENCL_VERSION 200
 #define CL_HPP_TARGET_OPENCL_VERSION 200
@@ -72,9 +77,6 @@ void MainWindow::adjustScrollBar(QScrollBar *scrollBar, float factor)
     scrollBar->setValue(static_cast<int>(factor * scrollBar->value() + ((factor -1) * scrollBar->pageStep()/2)));
 }
 
-template<class... Ts> struct overload : Ts... { using Ts::operator()...; };
-template<class... Ts> overload(Ts...) -> overload<Ts...>;
-
 void MainWindow::on_actionOpenTriggered(bool)
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Choose file"), "./", tr("Profiles (*.asc);;Images (*.jpg *.png *.bmp)"));
@@ -88,10 +90,9 @@ void MainWindow::on_actionOpenTriggered(bool)
 
     std::variant<GprData, QString> maybeGprData = tryCreateGprData(file);
 
-    std::visit(overload{[this](GprData& gprData) {
+    std::visit(Visitor{[this](GprData& gprData) {
             imageWrapper = std::make_unique<QImageWrapper>(gprData);
             imageTransformer = std::make_unique<CommonImageTransformer>(*imageWrapper);
-            //imageTransformer->rotate90();
             imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
             imageLabel->adjustSize();
             scrollArea->setVisible(true);
@@ -300,5 +301,9 @@ void MainWindow::on_mousePressedMoved(int x, int y)
 
 void MainWindow::on_mouseMoved(int x, int y)
 {
-    ui->statusbar->showMessage(QString("x: %1  y: %2").arg(x).arg(y));
+    x = std::lround(x / scaleFactor);
+    y = std::lround(y / scaleFactor);
+
+    GprData::DataType color = imageWrapper->getColor(x, y);
+    ui->statusbar->showMessage(QString("x: %1  y: %2  color: %3  scale: %4 imageLabel width: %5  height: %6").arg(x).arg(y).arg(color).arg(scaleFactor).arg(imageLabel->width()).arg(imageLabel->height()));
 }
