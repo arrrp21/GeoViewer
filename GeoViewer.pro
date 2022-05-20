@@ -12,10 +12,12 @@ SOURCES += \
     CommonImageTransformer.cpp \
     GprData.cpp \
     ImageLabel.cpp \
+    Panel.cpp \
     QImageWrapper.cpp \
     Span.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    format.cc
 
 LIBS += -L"$$PWD/CL" -lOpenCL
 
@@ -27,9 +29,13 @@ HEADERS += \
     GprData.hpp \
     ImageLabel.hpp \
     ImageTransformer.hpp \
+    Panel.hpp \
     QImageWrapper.hpp \
     Span.hpp \
     Visitor.hpp \
+    fmt/core.h \
+    fmt/format.h \
+    fmt/format-inl.h \
     mainwindow.h \
     $$files(*.h, true) \
     $$PWD/CL/cl2.hpp \
@@ -37,6 +43,7 @@ HEADERS += \
     $$files(*.cl)
 
 FORMS += \
+    Panel.ui \
     mainwindow.ui
 
 # Default rules for deployment.

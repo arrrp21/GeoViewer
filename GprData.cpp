@@ -2,6 +2,7 @@
 #include <ios>
 #include <QTextStream>
 #include <QDebug>
+#include "fmt/format.h"
 
 class QTextStreamWrapper : public QTextStream
 {
@@ -34,7 +35,7 @@ std::optional<QString> readData(
         GprData::DataType value{static_cast<GprData::DataType>(strValue.toInt(&isOk) + std::numeric_limits<std::int16_t>::max())};
         if (not isOk)
         {
-            return QString("Invalid DATA value (line: %1)").arg(inputTextStream.getLineCount());
+            return QString::fromStdString(fmt::format("Invalid DATA value (line: {})", inputTextStream.getLineCount()));
         }
         data.push_back(value);
     }

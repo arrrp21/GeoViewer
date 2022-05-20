@@ -1,13 +1,17 @@
 #include "Span.hpp"
 
 Span::Span(std::vector<GprData::DataType>& dataVector)
+    : sizeInBytes{dataVector.size() * sizeof(GprData::DataType)}
 {
-    qDebug() << "span ctor";
-    const std::size_t sizeInBytes{dataVector.size() * sizeof(GprData::DataType)};
     data = new uchar[sizeInBytes];
-    size = sizeInBytes;
     std::memcpy(data, dataVector.data(), sizeInBytes);
 }
+
+const uchar *Span::getByteData() { return data; }
+GprData::DataType *Span::getData() { return reinterpret_cast<GprData::DataType*>(data); }
+const GprData::DataType *Span::getData() const { return reinterpret_cast<const GprData::DataType*>(data); }
+std::size_t Span::getSizeInBytes() const { return sizeInBytes; }
+std::size_t Span::getSize() const { return sizeInBytes / sizeof(GprData::DataType); }
 
 uchar& Span::operator[](std::size_t index)
 {
@@ -17,20 +21,20 @@ uchar& Span::operator[](std::size_t index)
 Span::~Span()
 {
     delete [] data;
-    size = 0u;
+    sizeInBytes = 0u;
 }
 
 Span::Span(std::size_t sizeInBytes)
-    : size(sizeInBytes)
+    : sizeInBytes(sizeInBytes)
 {
     data = new uchar[sizeInBytes];
 }
 
 Span::Span(Span&& other) noexcept
-    : data{other.data}, size(other.size)
+    : data{other.data}, sizeInBytes(other.sizeInBytes)
 {
     other.data = nullptr;
-    other.size = 0;
+    other.sizeInBytes = 0u;
 }
 
 Span& Span::operator=(Span&& other)
@@ -41,10 +45,10 @@ Span& Span::operator=(Span&& other)
             delete [] data;
 
         data = other.data;
-        size = other.size;
+        sizeInBytes = other.sizeInBytes;
 
         other.data = nullptr;
-        other.size = 0;
+        other.sizeInBytes = 0;
     }
 
     return *this;

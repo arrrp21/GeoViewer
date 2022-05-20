@@ -15,13 +15,16 @@ public:
     Span& operator=(Span&&);
     Span(std::vector<GprData::DataType>& dataVector);
 
-    uchar* getData() { return data; }
-    std::size_t getSize() { return size; }
+    const uchar* getByteData();
+    GprData::DataType* getData();
+    const GprData::DataType* getData() const;
+    std::size_t getSizeInBytes() const;
+    std::size_t getSize() const;
 
     uchar& operator[](std::size_t index);
 
     ~Span();
 private:
     uchar* data = nullptr;
-    std::size_t size{0};
+    std::size_t sizeInBytes{0};
 };

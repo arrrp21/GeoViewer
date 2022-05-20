@@ -6,17 +6,21 @@
 #include <QMessageBox>
 #include <QImage>
 #include <QColorTransform>
+#include <QScrollArea>
 #include <QScrollBar>
 #include <QVBoxLayout>
-#include <QSlider>
 
 #include <ios>
 #include <cmath>
 
 #include "GprData.hpp"
+#include "ImageLabel.hpp"
 #include "QImageWrapper.hpp"
 #include "CommonImageTransformer.hpp"
 #include "Visitor.hpp"
+#include "fmt/format.h"
+#include "Panel.hpp"
+#include <QSlider>
 
 #define CL_HPP_MINIMUM_OPENCL_VERSION 200
 #define CL_HPP_TARGET_OPENCL_VERSION 200
@@ -24,6 +28,7 @@
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-declarations"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <CL/cl2.hpp>
 #pragma GCC diagnostic pop
 
@@ -31,17 +36,17 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , imageLabel(new ImageLabel)
+    , panel(new Panel(this))
     , scrollArea(new QScrollArea)
+    , layout(new QVBoxLayout)
+    , centralWidget(new QWidget)
 {
     ui->setupUi(this);
     ui->actionOpen->setShortcut(QKeySequence::Open);
 
-    connect(ui->actionOpen,      SIGNAL(triggered(bool)),        this, SLOT(on_actionOpenTriggered(bool))        );
-    connect(ui->actionGrayscale, SIGNAL(triggered(bool)),        this, SLOT(on_actionGrayscaleTriggered(bool))   );
-    connect(ui->actionRotate_90, SIGNAL(triggered(bool)),        this, SLOT(on_actionRotate_90Triggered(bool))   );
-    connect(imageLabel,          SIGNAL(mouseWheelUsed(QPoint)), this, SLOT(on_mouseWheelUsed(QPoint))           );
-    connect(imageLabel,          SIGNAL(mousePressedMoved(int,int)),this, SLOT(on_mousePressedMoved(int,int))              );
-    connect(imageLabel,          SIGNAL(mouseMoved(int,int)),    this, SLOT(on_mouseMoved(int,int))              );
+    connectSignals();
+
+    panel->setVisible(false);
 
     imageLabel->setBackgroundRole(QPalette::Base);
     imageLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
@@ -50,7 +55,13 @@ MainWindow::MainWindow(QWidget *parent)
     scrollArea->setBackgroundRole(QPalette::Dark);
     scrollArea->setWidget(imageLabel);
     scrollArea->setVisible(false);
-    setCentralWidget(scrollArea);
+
+    layout->addWidget(panel);
+    layout->addWidget(scrollArea);
+
+    centralWidget->setLayout(layout);
+
+    setCentralWidget(centralWidget);
 }
 
 MainWindow::~MainWindow()
@@ -90,11 +101,14 @@ void MainWindow::on_actionOpenTriggered(bool)
 
     std::variant<GprData, QString> maybeGprData = tryCreateGprData(file);
 
-    std::visit(Visitor{[this](GprData& gprData) {
+    std::visit(Visitor{
+         [this](GprData& gprData) {
             imageWrapper = std::make_unique<QImageWrapper>(gprData);
             imageTransformer = std::make_unique<CommonImageTransformer>(*imageWrapper);
             imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
             imageLabel->adjustSize();
+            ui->actionGainPanel->setChecked(true);
+            panel->setImageHeight(imageWrapper->getImage().height());
             scrollArea->setVisible(true);
         },
         [](QString& error) {
@@ -120,6 +134,12 @@ void MainWindow::on_actionOpenTriggered(bool)
     imageLabel->adjustSize();
     scrollArea->setVisible(true);*/
 }
+
+void MainWindow::on_actionGainPannelToggled(bool checked)
+{
+    panel->setVisible(checked);
+}
+
 #include <iostream>
 
 void MainWindow::on_actionGrayscaleTriggered(bool)
@@ -215,7 +235,7 @@ void MainWindow::on_actionGrayscaleTriggered(bool)
     imageLabel->setPixmap(QPixmap::fromImage(image));
 }
 
-void MainWindow::on_actionRotate_90Triggered(bool)
+void MainWindow::on_actionRotate90Triggered(bool)
 {
     imageTransformer->rotate90();
     imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
@@ -305,5 +325,29 @@ void MainWindow::on_mouseMoved(int x, int y)
     y = std::lround(y / scaleFactor);
 
     GprData::DataType color = imageWrapper->getColor(x, y);
-    ui->statusbar->showMessage(QString("x: %1  y: %2  color: %3  scale: %4 imageLabel width: %5  height: %6").arg(x).arg(y).arg(color).arg(scaleFactor).arg(imageLabel->width()).arg(imageLabel->height()));
+    ui->statusbar->showMessage(QString::fromStdString(
+        fmt::format("x: {}  y: {}  color: {}  scale: {} imageLabel width: {}  height: {}",
+                    x, y, color, scaleFactor, imageLabel->width(), imageLabel->height())));
+}
+
+void MainWindow::on_sliderValueChanged(int value)
+{
+    float contrast = static_cast<float>(value)/10.0f;
+    qDebug() << "value changed: " << contrast;
+    imageTransformer->changeContrast(contrast);
+    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
+    imageLabel->adjustSize();
+    scrollArea->setVisible(true);
+}
+
+void MainWindow::connectSignals()
+{
+    //      sender                      signal                      receiver   slot
+    connect(ui->actionOpen,      SIGNAL(triggered(bool)),           this, SLOT(on_actionOpenTriggered(bool))        );
+    connect(ui->actionGrayscale, SIGNAL(triggered(bool)),           this, SLOT(on_actionGrayscaleTriggered(bool))   );
+    connect(ui->actionRotate90,  SIGNAL(triggered(bool)),           this, SLOT(on_actionRotate90Triggered(bool))    );
+    connect(ui->actionGainPanel, SIGNAL(toggled(bool)),             this, SLOT(on_actionGainPannelToggled(bool))    );
+    connect(imageLabel,          SIGNAL(mouseWheelUsed(QPoint)),    this, SLOT(on_mouseWheelUsed(QPoint))           );
+    connect(imageLabel,          SIGNAL(mousePressedMoved(int,int)),this, SLOT(on_mousePressedMoved(int,int))       );
+    connect(imageLabel,          SIGNAL(mouseMoved(int,int)),       this, SLOT(on_mouseMoved(int,int))              );
 }
