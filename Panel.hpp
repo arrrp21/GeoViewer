@@ -14,9 +14,11 @@ public:
     void setImageHeight(int imageHeight);
     ~Panel();
 
+
 private:
     static constexpr double minGain{0.5};
     static constexpr double maxGain{2.0};
+    static constexpr double defaultGain{1.0};
 
     Ui::Panel *ui;
     std::optional<int> imageHeight{std::nullopt};
@@ -24,4 +26,8 @@ private:
     void setHeightConstraints();
     void connectSignals();
     void connectSlidersConstraints();
+
+signals:
+    void sliderGainValueChanged(int, int, int);
+    void buttonEqualizeHistClicked(int, int);
 };

@@ -16,11 +16,17 @@ public:
 
     void rotate90() override;
     void changeContrast(float contrast) override;
+    void gain(int from, int to, float value) override;
+    void equalizeHistogram(int from, int to) override;
 
 private:
     QImageWrapper& imageWrapper;
 
-
+    LookupTable createLut(GprData::DataType min, GprData::DataType max);
     LookupTable createLut(float contrast);
+
+    GprData::DataType min(int from, int to);
+    GprData::DataType max(int from, int to);
+
 };
 

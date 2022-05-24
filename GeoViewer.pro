@@ -11,10 +11,10 @@ CONFIG += c++17
 SOURCES += \
     CommonImageTransformer.cpp \
     GprData.cpp \
+    ImageData.cpp \
     ImageLabel.cpp \
     Panel.cpp \
     QImageWrapper.cpp \
-    Span.cpp \
     main.cpp \
     mainwindow.cpp \
     format.cc
@@ -27,11 +27,11 @@ INCLUDEPATH += "$$PWD/CL" \
 HEADERS += \
     CommonImageTransformer.hpp \
     GprData.hpp \
+    ImageData.hpp \
     ImageLabel.hpp \
     ImageTransformer.hpp \
     Panel.hpp \
     QImageWrapper.hpp \
-    Span.hpp \
     Visitor.hpp \
     fmt/core.h \
     fmt/format.h \

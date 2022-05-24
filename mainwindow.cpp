@@ -9,6 +9,7 @@
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QVBoxLayout>
+#include <QPushButton>
 
 #include <ios>
 #include <cmath>
@@ -44,8 +45,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->actionOpen->setShortcut(QKeySequence::Open);
 
-    connectSignals();
-
     panel->setVisible(false);
 
     imageLabel->setBackgroundRole(QPalette::Base);
@@ -56,12 +55,26 @@ MainWindow::MainWindow(QWidget *parent)
     scrollArea->setWidget(imageLabel);
     scrollArea->setVisible(false);
 
-    layout->addWidget(panel);
+
+    rotateButton = new QPushButton;
+    QPixmap pixmap("../GeoViewer/resources/rotate.png");
+    QIcon icon(pixmap);
+    rotateButton->setIcon(icon);
+    rotateButton->setIconSize(QSize(24, 24));
+    rotateButton->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+    QHBoxLayout* hBoxLayout = new QHBoxLayout;
+    hBoxLayout->addWidget(panel);
+    hBoxLayout->addWidget(rotateButton);
+
+    layout->addLayout(hBoxLayout);
     layout->addWidget(scrollArea);
 
     centralWidget->setLayout(layout);
 
     setCentralWidget(centralWidget);
+
+    connectSignals();
 }
 
 MainWindow::~MainWindow()
@@ -85,7 +98,7 @@ void MainWindow::scaleImage(float factor)
 
 void MainWindow::adjustScrollBar(QScrollBar *scrollBar, float factor)
 {
-    scrollBar->setValue(static_cast<int>(factor * scrollBar->value() + ((factor -1) * scrollBar->pageStep()/2)));
+    scrollBar->setValue(static_cast<int>((factor + 1) * scrollBar->value() + (factor * scrollBar->pageStep()/2)));
 }
 
 void MainWindow::on_actionOpenTriggered(bool)
@@ -117,22 +130,6 @@ void MainWindow::on_actionOpenTriggered(bool)
             messageBox.exec();
         }},
         maybeGprData);
-
-    /*uchar* aa = imageWrapper->rawData.getData();
-    for (int i = 0; i < 10; i++)
-        qDebug() << aa[i];*/
-
-    /*QImage newImage(fileName);
-    if (newImage.isNull())
-    {
-        QMessageBox::information(this, QGuiApplication::applicationDisplayName(), tr("Cannot open the image: %1").arg(QDir::toNativeSeparators(fileName)));
-        return;
-    }
-
-    image = std::move(newImage);
-    imageLabel->setPixmap(QPixmap::fromImage(image));
-    imageLabel->adjustSize();
-    scrollArea->setVisible(true);*/
 }
 
 void MainWindow::on_actionGainPannelToggled(bool checked)
@@ -243,6 +240,87 @@ void MainWindow::on_actionRotate90Triggered(bool)
     scrollArea->setVisible(true);
 }
 
+void MainWindow::on_mouseWheelUsed(QPoint angleDelta)
+{
+    float factor = (angleDelta.y() > 0) ? (1.0f + scaleFactorStep) : (1.0f - scaleFactorStep);
+    scaleImage(factor);
+}
+
+void MainWindow::on_mousePressedMoved(int x, int y)
+{
+    if (x != 0)
+    {
+        QScrollBar* horizontalScrollBar = scrollArea->horizontalScrollBar();
+        int currentValue = horizontalScrollBar->value();
+        horizontalScrollBar->setValue(currentValue + x);
+    }
+
+    if (y != 0)
+    {
+        QScrollBar* verticallScrollBar = scrollArea->verticalScrollBar();
+        int currentValue = verticallScrollBar->value();
+        verticallScrollBar->setValue(currentValue + y);
+    };
+}
+
+void MainWindow::on_mouseMoved(int x, int y)
+{
+    x = std::lround(x / scaleFactor);
+    y = std::lround(y / scaleFactor);
+
+    GprData::DataType color = imageWrapper->getColor(x, y);
+    ui->statusbar->showMessage(QString::fromStdString(
+        fmt::format("x: {}  y: {}  color: {}  scale: {} imageLabel width: {}  height: {}",
+                    x, y, color, scaleFactor, imageLabel->width(), imageLabel->height())));
+}
+
+void MainWindow::on_sliderGainValueChanged(int from, int to, int value)
+{
+    float gain = static_cast<float>(value)/10.0f;
+    qDebug() << "value changed: " << gain;
+    imageTransformer->gain(from, to, gain);
+    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
+    imageLabel->adjustSize();
+    scrollArea->setVisible(true);
+}
+
+void MainWindow::on_buttonEqualizeHistClicked(int from, int to)
+{
+    imageTransformer->equalizeHistogram(from, to);
+    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
+    imageLabel->adjustSize();
+    scaleImage(scaleFactor);
+}
+
+void MainWindow::on_buttonResetClicked()
+{
+    imageWrapper->resetImage();
+    scaleFactor = 1.0f;
+}
+
+void MainWindow::on_rotateButtonPressed()
+{
+    imageTransformer->rotate90();
+    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
+    imageLabel->adjustSize();
+    panel->setImageHeight(imageWrapper->getImage().height());
+}
+
+void MainWindow::connectSignals()
+{
+    //      sender                        signal                                    receiver   slot
+    connect(ui->actionOpen,        SIGNAL(triggered(bool)),                         this, SLOT(on_actionOpenTriggered(bool))            );
+    connect(ui->actionGrayscale,   SIGNAL(triggered(bool)),                         this, SLOT(on_actionGrayscaleTriggered(bool))       );
+    connect(ui->actionRotate90,    SIGNAL(triggered(bool)),                         this, SLOT(on_actionRotate90Triggered(bool))        );
+    connect(ui->actionGainPanel,   SIGNAL(toggled(bool)),                           this, SLOT(on_actionGainPannelToggled(bool))        );
+    connect(imageLabel,            SIGNAL(mouseWheelUsed(QPoint)),                  this, SLOT(on_mouseWheelUsed(QPoint))               );
+    connect(imageLabel,            SIGNAL(mousePressedMoved(int,int)),              this, SLOT(on_mousePressedMoved(int,int))           );
+    connect(imageLabel,            SIGNAL(mouseMoved(int,int)),                     this, SLOT(on_mouseMoved(int,int))                  );
+    connect(rotateButton,          SIGNAL(pressed()),                               this, SLOT(on_rotateButtonPressed())                );
+    connect(panel,                 SIGNAL(sliderGainValueChanged(int, int, int)),   this, SLOT(on_sliderGainValueChanged(int, int, int)));
+    connect(panel,                 SIGNAL(buttonEqualizeHistClicked(int, int)),     this, SLOT(on_buttonEqualizeHistClicked(int, int))  );
+}
+
 /*void MainWindow::on_actionGrayscaleTriggered(bool)
 {
     std::vector<cl::Platform> platforms;
@@ -295,59 +373,3 @@ void MainWindow::on_actionRotate90Triggered(bool)
     imageLabel->setPixmap(QPixmap::fromImage(image));
 
 }*/
-
-void MainWindow::on_mouseWheelUsed(QPoint angleDelta)
-{
-    float factor = (angleDelta.y() > 0) ? (1.0f + scaleFactorStep) : (1.0f - scaleFactorStep);
-    scaleImage(factor);
-}
-
-void MainWindow::on_mousePressedMoved(int x, int y)
-{
-    if (x != 0)
-    {
-        QScrollBar* horizontalScrollBar = scrollArea->horizontalScrollBar();
-        int currentValue = horizontalScrollBar->value();
-        horizontalScrollBar->setValue(currentValue + x);
-    }
-
-    if (y != 0)
-    {
-        QScrollBar* verticallScrollBar = scrollArea->verticalScrollBar();
-        int currentValue = verticallScrollBar->value();
-        verticallScrollBar->setValue(currentValue + y);
-    };
-}
-
-void MainWindow::on_mouseMoved(int x, int y)
-{
-    x = std::lround(x / scaleFactor);
-    y = std::lround(y / scaleFactor);
-
-    GprData::DataType color = imageWrapper->getColor(x, y);
-    ui->statusbar->showMessage(QString::fromStdString(
-        fmt::format("x: {}  y: {}  color: {}  scale: {} imageLabel width: {}  height: {}",
-                    x, y, color, scaleFactor, imageLabel->width(), imageLabel->height())));
-}
-
-void MainWindow::on_sliderValueChanged(int value)
-{
-    float contrast = static_cast<float>(value)/10.0f;
-    qDebug() << "value changed: " << contrast;
-    imageTransformer->changeContrast(contrast);
-    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
-    imageLabel->adjustSize();
-    scrollArea->setVisible(true);
-}
-
-void MainWindow::connectSignals()
-{
-    //      sender                      signal                      receiver   slot
-    connect(ui->actionOpen,      SIGNAL(triggered(bool)),           this, SLOT(on_actionOpenTriggered(bool))        );
-    connect(ui->actionGrayscale, SIGNAL(triggered(bool)),           this, SLOT(on_actionGrayscaleTriggered(bool))   );
-    connect(ui->actionRotate90,  SIGNAL(triggered(bool)),           this, SLOT(on_actionRotate90Triggered(bool))    );
-    connect(ui->actionGainPanel, SIGNAL(toggled(bool)),             this, SLOT(on_actionGainPannelToggled(bool))    );
-    connect(imageLabel,          SIGNAL(mouseWheelUsed(QPoint)),    this, SLOT(on_mouseWheelUsed(QPoint))           );
-    connect(imageLabel,          SIGNAL(mousePressedMoved(int,int)),this, SLOT(on_mousePressedMoved(int,int))       );
-    connect(imageLabel,          SIGNAL(mouseMoved(int,int)),       this, SLOT(on_mouseMoved(int,int))              );
-}

@@ -24,8 +24,8 @@ struct GprData
 
     double RANGE;
     double PROP_VEL;
-    std::uint32_t N_ACQ_SAMPLE;
-    std::uint32_t N_ACQ_SWEEP;
+    int N_ACQ_SAMPLE;
+    int N_ACQ_SWEEP;
     double X_STEP;
 
     std::vector<DataType> data;

@@ -2,7 +2,7 @@
 #include <QImage>
 #include <cstdint>
 #include "GprData.hpp"
-#include "Span.hpp"
+#include "ImageData.hpp"
 
 class QImageWrapper
 {
@@ -15,14 +15,18 @@ public:
     QImageWrapper& operator=(QImageWrapper&&) = delete;
 
     GprData::DataType getColor(int x, int y);
+    int height() const;
+    int width() const;
     const QImage& getImage() const;
-    const Span& getRawData() const;
-    const Span& getOriginalRawData() const;
-    void setNewImage(QImage&&, Span&&);
+    const ImageData& getImageData() const;
+    const ImageData& getOriginalImageData() const;
+    void changeOriginalImageData(const ImageData&);
+    void setNewImage(ImageData&&);
+    void resetImage();
 
 private:
+    ImageData imageData;
+    ImageData originalImageData;
     QImage image;
-    Span rawData;
-    const Span originalRawData;
 };
 

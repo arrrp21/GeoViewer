@@ -2,43 +2,57 @@
 #include <utility>
 
 QImageWrapper::QImageWrapper(GprData& gprData)
-    : rawData{gprData.data}
-    , originalRawData({gprData.data})
+    : imageData{gprData.data, gprData.N_ACQ_SAMPLE, gprData.N_ACQ_SWEEP}
+    , originalImageData{imageData}
 {
     image = QImage(
-        rawData.getByteData(),
+        imageData.getByteData(),
         gprData.N_ACQ_SAMPLE,
         gprData.N_ACQ_SWEEP,
-        gprData.N_ACQ_SAMPLE * 2,
+        gprData.N_ACQ_SAMPLE * sizeof(GprData::DataType),
         QImage::Format_Grayscale16);
 }
 
 GprData::DataType QImageWrapper::getColor(int x, int y)
 {
-    const GprData::DataType* data = rawData.getData();
-
-    if (x >= image.width() or y >= image.height())
+    if (x >= width() or y >= height())
     {
         return 0u;
     }
 
-    return data[y * image.width() + x];
+    return imageData.at(y, x);
 }
 
+int QImageWrapper::height() const { return image.height(); }
+int QImageWrapper::width() const { return image.width(); }
+
 const QImage& QImageWrapper::getImage() const { return image; }
+const ImageData& QImageWrapper::getImageData() const { return imageData; }
+const ImageData& QImageWrapper::getOriginalImageData() const { return originalImageData; }
 
-const Span& QImageWrapper::getRawData() const { return rawData; }
-
-const Span &QImageWrapper::getOriginalRawData() const { return originalRawData; }
-
-void QImageWrapper::setNewImage(QImage&& newImage, Span&& newData)
+void QImageWrapper::changeOriginalImageData(const ImageData& newOriginalImageData)
 {
-    //qDebug() << "old image width: " << image.width() << " height: " << image.height();
-    //qDebug() << "old rawData size: " << rawData.getSize();
+    originalImageData = newOriginalImageData;
+}
 
-    image = std::move(newImage);
-    rawData = std::move(newData);
+void QImageWrapper::setNewImage(ImageData&& newImageData)
+{
+    imageData = std::move(newImageData);
+    image = QImage(
+        imageData.getByteData(),
+        imageData.getWidth(),
+        imageData.getHeight(),
+        imageData.getWidth() * sizeof(GprData::DataType),
+        QImage::Format_Grayscale16);
+}
 
-    //qDebug() << "new image width: " << image.width() << " height: " << image.height();
-    //qDebug() << "new rawData size: " << rawData.getSize();
+void QImageWrapper::resetImage()
+{
+    imageData = originalImageData;
+    image = QImage(
+        imageData.getByteData(),
+        imageData.getWidth(),
+        imageData.getHeight(),
+        imageData.getWidth() * sizeof(GprData::DataType),
+        QImage::Format_Grayscale16);
 }

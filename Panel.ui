@@ -122,6 +122,32 @@
     </property>
    </widget>
   </widget>
+  <widget class="QPushButton" name="buttonEqualizeHist">
+   <property name="geometry">
+    <rect>
+     <x>480</x>
+     <y>10</y>
+     <width>121</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Equalize histogram</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="buttonReset">
+   <property name="geometry">
+    <rect>
+     <x>620</x>
+     <y>10</y>
+     <width>93</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Reset</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>
