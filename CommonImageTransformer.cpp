@@ -1,5 +1,6 @@
 #include "CommonImageTransformer.hpp"
 #include "QImageWrapper.hpp"
+#include "Mask.hpp"
 #include <QVariant>
 
 CommonImageTransformer::CommonImageTransformer(QImageWrapper& imageWrapper)
@@ -64,15 +65,33 @@ void CommonImageTransformer::gain(int from, int to, float value)
     imageWrapper.setNewImage(std::move(newImageData));
 }
 
+void CommonImageTransformer::gain(int from, int to, double gainLower, double gainUpper)
+{
+    ImageData newImageData{imageWrapper.getOriginalImageData()};
+
+    double step = (gainUpper - gainLower) / (to - from);
+    double gain = gainLower;
+    for (int i = from; i < to; i++)
+    {
+        gain += step;
+        for (int j = 0; j < imageWrapper.width(); j++)
+        {
+            std::uint64_t tempNewValue = static_cast<std::uint64_t>(newImageData.at(i, j) * gain);
+            GprData::DataType newValue = tempNewValue <= limits::max() ? tempNewValue : limits::max();
+            newImageData.at(i, j) = newValue;
+        }
+    }
+
+    imageWrapper.setNewImage(std::move(newImageData));
+}
+
 void CommonImageTransformer::equalizeHistogram(int from, int to)
 {
     qDebug() << "equalizeHistogram from: " << from << ", to: " << to;
     qDebug() << "min: " << min(from, to) << ", max: " << max(from, to);
 
-    ImageData newImageData{imageWrapper.getOriginalImageData()};
+    ImageData newImageData{imageWrapper.getImageData()};
     LookupTable lut = createLut(min(from, to), max(from, to));
-    auto mi = min(from, to);
-    auto ma = max(from, to);
 
     qDebug() << "lut created";
 
@@ -81,7 +100,6 @@ void CommonImageTransformer::equalizeHistogram(int from, int to)
         for (int j = 0; j < imageWrapper.width(); j++)
         {
             newImageData.at(i, j) = lut[newImageData.at(i, j)];
-            //newImageData.at(i, j) = std::lround((newImageData.at(i, j) - mi) / (ma - mi) * (limits::max() - 1));
         }
     }
     qDebug() << "before setNewImage";
@@ -90,6 +108,50 @@ void CommonImageTransformer::equalizeHistogram(int from, int to)
     qDebug() << "after setNewImage";
     qDebug() << "min: " << min(from, to) << ", max: " << max(from, to);
     qDebug() << "====================================";
+}
+
+void CommonImageTransformer::applyFilter(const Mask& mask)
+{
+    std::visit([this] (auto&& mask) {applyFilter(mask); }, mask);
+}
+
+template <class MaskType>
+void CommonImageTransformer::applyFilter(const MaskType& mask)
+{
+    qDebug() << "applyFilter";
+
+    int width = imageWrapper.width();
+    int height = imageWrapper.height();
+    const ImageData& oldImageData = imageWrapper.getImageData();
+    ImageData newImageData(width, height);
+
+    int midHeight = mask.height/2;
+    int midWidth = mask.width/2;
+
+    int c = 0;
+    for (int row = midHeight; row < height - midHeight; row++)
+    {
+        for (int col = midWidth; col < width - midWidth; col++)
+        {
+            int value = 0;
+            for (int i = 0; i < mask.height; i++)
+            {
+                for (int j = 0; j < mask.width; j++)
+                    value += oldImageData.at(row + i - midHeight, col + j - midWidth) * mask.at(i, j);
+            }
+            if (value > limits::max())
+                value = limits::max();
+            else if (value < 0)
+            {
+                if (c++ % 100 == 0)
+                    qDebug() << value;
+                value = 0;
+            }
+            newImageData.at(row, col) = static_cast<GprData::DataType>(value);
+        }
+    }
+
+    imageWrapper.setNewImage(std::move(newImageData));
 }
 
 LookupTable CommonImageTransformer::createLut(GprData::DataType min, GprData::DataType max)

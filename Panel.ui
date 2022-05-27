@@ -25,12 +25,12 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QGroupBox" name="groupBoxImageGain">
+  <widget class="QGroupBox" name="groupBoxRange">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>460</width>
+     <width>260</width>
      <height>60</height>
     </rect>
    </property>
@@ -47,9 +47,9 @@
     </size>
    </property>
    <property name="title">
-    <string>Gain</string>
+    <string>Range</string>
    </property>
-   <widget class="QSlider" name="sliderLower">
+   <widget class="QSlider" name="sliderRangeLower">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -62,7 +62,7 @@
      <enum>Qt::Horizontal</enum>
     </property>
    </widget>
-   <widget class="QSlider" name="sliderUpper">
+   <widget class="QSlider" name="sliderRangeUpper">
     <property name="geometry">
      <rect>
       <x>20</x>
@@ -75,48 +75,22 @@
      <enum>Qt::Horizontal</enum>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEditLower">
+   <widget class="QLineEdit" name="lineEditRangeLower">
     <property name="geometry">
      <rect>
       <x>200</x>
       <y>16</y>
-      <width>60</width>
+      <width>48</width>
       <height>18</height>
      </rect>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEditUpper">
+   <widget class="QLineEdit" name="lineEditRangeUpper">
     <property name="geometry">
      <rect>
       <x>200</x>
       <y>36</y>
-      <width>60</width>
-      <height>18</height>
-     </rect>
-    </property>
-   </widget>
-   <widget class="QSlider" name="sliderGainValue">
-    <property name="geometry">
-     <rect>
-      <x>290</x>
-      <y>18</y>
-      <width>160</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="minimum">
-     <number>0</number>
-    </property>
-    <property name="orientation">
-     <enum>Qt::Horizontal</enum>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineEditGainValue">
-    <property name="geometry">
-     <rect>
-      <x>340</x>
-      <y>36</y>
-      <width>100</width>
+      <width>48</width>
       <height>18</height>
      </rect>
     </property>
@@ -147,6 +121,93 @@
    <property name="text">
     <string>Reset</string>
    </property>
+  </widget>
+  <widget class="QPushButton" name="buttonRotate">
+   <property name="geometry">
+    <rect>
+     <x>730</x>
+     <y>10</y>
+     <width>28</width>
+     <height>28</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="groupBoxGain">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>0</y>
+     <width>160</width>
+     <height>60</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Linear Gain</string>
+   </property>
+   <widget class="QSlider" name="sliderGainValueLower">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>18</y>
+      <width>100</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>0</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QSlider" name="sliderGainValueUpper">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>36</y>
+      <width>100</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelGainValueLower">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>16</y>
+      <width>36</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>text</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="labelGainValueUpper">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>34</y>
+      <width>36</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>text</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>

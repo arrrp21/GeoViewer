@@ -10,13 +10,20 @@ Panel::Panel(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    ui->sliderGainValue->setMinimum(minGain * 10);
-    ui->sliderGainValue->setMaximum(maxGain * 10);
-    ui->sliderGainValue->setValue(defaultGain * 10);
-    QDoubleValidator* validator = new QDoubleValidator(minGain, maxGain, 1);
-    validator->setNotation(QDoubleValidator::Notation::StandardNotation);
-    validator->setLocale(QLocale(QLocale::English));
-    ui->lineEditGainValue->setValidator(validator);
+    ui->sliderGainValueLower->setMinimum(std::lround(minGain * multiplier));
+    ui->sliderGainValueLower->setMaximum(std::lround(maxGain * multiplier) - 1);
+    ui->sliderGainValueLower->setValue(std::lround(defaultGainLower * multiplier));
+    ui->labelGainValueLower->setText(QString::number(defaultGainLower));
+
+    ui->sliderGainValueUpper->setMinimum(std::lround(minGain * multiplier) + 1);
+    ui->sliderGainValueUpper->setMaximum(std::lround(maxGain * multiplier));
+    ui->sliderGainValueUpper->setValue(std::lround(defaultGainUpper * multiplier));
+    ui->labelGainValueUpper->setText(QString::number(defaultGainUpper));
+
+    QPixmap pixmap("../GeoViewer/resources/rotate.png");
+    QIcon icon(pixmap);
+    ui->buttonRotate->setIcon(icon);
+    ui->buttonRotate->setIconSize(QSize(24, 24));
 
     connectSignals();
 }
@@ -32,21 +39,21 @@ void Panel::setHeightConstraints()
     if (not imageHeight.has_value())
         return;
 
-    ui->sliderLower->setValue(0);
-    ui->sliderLower->setMinimum(0);
-    ui->sliderLower->setMaximum(*imageHeight - 1);
-    ui->sliderLower->setSingleStep(1);
+    ui->sliderRangeLower->setValue(0);
+    ui->sliderRangeLower->setMinimum(0);
+    ui->sliderRangeLower->setMaximum(*imageHeight - 1);
+    ui->sliderRangeLower->setSingleStep(1);
 
-    ui->sliderUpper->setValue(*imageHeight - 1);
-    ui->sliderUpper->setMinimum(0);
-    ui->sliderUpper->setMaximum(*imageHeight - 1);
-    ui->sliderUpper->setSingleStep(1);
+    ui->sliderRangeUpper->setValue(*imageHeight - 1);
+    ui->sliderRangeUpper->setMinimum(0);
+    ui->sliderRangeUpper->setMaximum(*imageHeight - 1);
+    ui->sliderRangeUpper->setSingleStep(1);
 
-    ui->lineEditLower->setText("0");
-    ui->lineEditLower->setValidator(new QIntValidator(0, *imageHeight - 1));
+    ui->lineEditRangeLower->setText("0");
+    ui->lineEditRangeLower->setValidator(new QIntValidator(0, *imageHeight - 1));
 
-    ui->lineEditUpper->setText(QString::number(*imageHeight - 1));
-    ui->lineEditUpper->setValidator(new QIntValidator(0, *imageHeight - 1));
+    ui->lineEditRangeUpper->setText(QString::number(*imageHeight - 1));
+    ui->lineEditRangeUpper->setValidator(new QIntValidator(0, *imageHeight - 1));
 }
 
 Panel::~Panel()
@@ -58,32 +65,56 @@ void Panel::connectSignals()
 {
     connectSlidersConstraints();
 
-    connect(ui->sliderLower, &QSlider::valueChanged, [this](int value) { ui->lineEditLower->setText(QString::number(value)); });
-    connect(ui->sliderUpper, &QSlider::valueChanged, [this](int value) { ui->lineEditUpper->setText(QString::number(value)); });
+    connect(ui->sliderRangeLower, &QSlider::valueChanged, [this](int value) { ui->lineEditRangeLower->setText(QString::number(value)); });
+    connect(ui->sliderRangeUpper, &QSlider::valueChanged, [this](int value) { ui->lineEditRangeUpper->setText(QString::number(value)); });
 
-    connect(ui->lineEditLower, &QLineEdit::textChanged, [this](const QString& text) { ui->sliderLower->setValue(text.toInt()); });
-    connect(ui->lineEditUpper, &QLineEdit::textChanged, [this](const QString& text) { ui->sliderUpper->setValue(text.toInt()); });
+    connect(ui->lineEditRangeLower, &QLineEdit::textChanged, [this](const QString& text) { ui->sliderRangeLower->setValue(text.toInt()); });
+    connect(ui->lineEditRangeUpper, &QLineEdit::textChanged, [this](const QString& text) { ui->sliderRangeUpper->setValue(text.toInt()); });
 
-    connect(ui->sliderGainValue, &QSlider::valueChanged, [this](int value) {
-        ui->lineEditGainValue->setText(QString::number(static_cast<float>(value)/10.0f));
-        emit sliderGainValueChanged(ui->sliderLower->value(), ui->sliderUpper->value(), value);
+    connect(ui->sliderGainValueLower, &QSlider::valueChanged, [this](int value) {
+        ui->labelGainValueLower->setText(QString::number(value/multiplier));
+        emit sliderGainChanged(
+            ui->sliderRangeLower->value(),
+            ui->sliderRangeUpper->value(),
+            value/multiplier,
+            ui->sliderGainValueUpper->value()/multiplier);
     });
-    connect(ui->lineEditGainValue, &QLineEdit::textChanged, [this](const QString& text) { ui->sliderGainValue->setValue(text.toFloat()*10); });
+    connect(ui->sliderGainValueUpper, &QSlider::valueChanged, [this](int value) {
+        ui->labelGainValueUpper->setText(QString::number(value/multiplier));
+        emit sliderGainChanged(
+            ui->sliderRangeLower->value(),
+            ui->sliderRangeUpper->value(),
+            ui->sliderGainValueLower->value()/multiplier,
+            value/multiplier);
+    });
 
     connect(ui->buttonEqualizeHist, &QPushButton::clicked, [this] () {
-        emit buttonEqualizeHistClicked(ui->sliderLower->value(), ui->sliderUpper->value());
+        emit buttonEqualizeHistClicked(ui->sliderRangeLower->value(), ui->sliderRangeUpper->value());
     });
+
+    connect(ui->buttonRotate, &QPushButton::clicked, [this] () { emit buttonRotateClicked(); });
+    connect(ui->buttonReset, &QPushButton::clicked, [this] () { emit buttonResetClicked(); });
 }
 
 void Panel::connectSlidersConstraints()
 {
-    connect(ui->sliderLower, &QSlider::sliderMoved, [this](int value) {
-        if (auto upperSliderValue = ui->sliderUpper->value(); value >= upperSliderValue)
-            ui->sliderLower->setValue(upperSliderValue - 1);
+    connect(ui->sliderRangeLower, &QSlider::sliderMoved, [this](int value) {
+        if (auto upperSliderValue = ui->sliderRangeUpper->value(); value >= upperSliderValue)
+            ui->sliderRangeLower->setValue(upperSliderValue - 1);
     });
 
-    connect(ui->sliderUpper, &QSlider::sliderMoved, [this](int value) {
-       if (auto lowerSliderValue = ui->sliderLower->value(); value <= lowerSliderValue)
-           ui->sliderUpper->setValue(lowerSliderValue + 1);
+    connect(ui->sliderRangeUpper, &QSlider::sliderMoved, [this](int value) {
+       if (auto lowerSliderValue = ui->sliderRangeLower->value(); value <= lowerSliderValue)
+           ui->sliderRangeUpper->setValue(lowerSliderValue + 1);
+    });
+
+    connect(ui->sliderGainValueLower, &QSlider::sliderMoved, [this](int value) {
+        if (auto upperSliderValue = ui->sliderGainValueUpper->value(); value >= upperSliderValue)
+            ui->sliderGainValueLower->setValue((upperSliderValue - 1));
+    });
+
+    connect(ui->sliderGainValueUpper, &QSlider::sliderMoved, [this](int value) {
+        if (auto lowerSliderValue = ui->sliderGainValueLower->value(); value <= lowerSliderValue)
+            ui->sliderGainValueUpper->setValue(lowerSliderValue + 1);
     });
 }

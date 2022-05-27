@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>GeoViewer</string>
   </property>
   <widget class="QWidget" name="centralwidget"/>
   <widget class="QMenuBar" name="menubar">
@@ -28,6 +28,7 @@
      <string>File</string>
     </property>
     <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuTools">
@@ -37,6 +38,7 @@
     <addaction name="actionGrayscale"/>
     <addaction name="actionRotate90"/>
     <addaction name="actionGainPanel"/>
+    <addaction name="actionHighPassFilter"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTools"/>
@@ -71,6 +73,16 @@
    </property>
    <property name="text">
     <string>Gain panel</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionHighPassFilter">
+   <property name="text">
+    <string>High pass filter</string>
    </property>
   </action>
  </widget>

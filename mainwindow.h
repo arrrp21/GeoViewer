@@ -10,7 +10,6 @@ class QScrollArea;
 class QLabel;
 class QVBoxLayout;
 class QScrollBar;
-class QPushButton;
 QT_END_NAMESPACE
 
 class QImageWrapper;
@@ -36,7 +35,6 @@ private:
     QScrollArea* scrollArea;
     QVBoxLayout* layout;
     QWidget* centralWidget;
-    QPushButton* rotateButton;
 
     float scaleFactor{1.0f};
 
@@ -58,14 +56,16 @@ private:
 public slots:
     void on_actionGainPannelToggled(bool);
     void on_actionOpenTriggered(bool);
+    void on_actionSaveTriggered(bool);
     void on_actionGrayscaleTriggered(bool);
     void on_actionRotate90Triggered(bool);
+    void on_actionHighPassFilterTriggered(bool);
     void on_mouseWheelUsed(QPoint angleDelta);
     void on_mousePressedMoved(int x, int y);
     void on_mouseMoved(int x, int y);
 
-    void on_sliderGainValueChanged(int, int, int);
+    void on_sliderGainChanged(int, int, double, double);
     void on_buttonEqualizeHistClicked(int, int);
     void on_buttonResetClicked();
-    void on_rotateButtonPressed();
+    void on_buttonRotateClicked();
 };

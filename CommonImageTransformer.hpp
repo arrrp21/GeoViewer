@@ -17,7 +17,9 @@ public:
     void rotate90() override;
     void changeContrast(float contrast) override;
     void gain(int from, int to, float value) override;
+    void gain(int from, int to, double gainLower, double gainUpper) override;
     void equalizeHistogram(int from, int to) override;
+    void applyFilter(const Mask& mask) override;
 
 private:
     QImageWrapper& imageWrapper;
@@ -28,5 +30,7 @@ private:
     GprData::DataType min(int from, int to);
     GprData::DataType max(int from, int to);
 
+    template <class MaskType>
+    void applyFilter(const MaskType& mask);
 };
 

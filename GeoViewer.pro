@@ -30,6 +30,7 @@ HEADERS += \
     ImageData.hpp \
     ImageLabel.hpp \
     ImageTransformer.hpp \
+    Mask.hpp \
     Panel.hpp \
     QImageWrapper.hpp \
     Visitor.hpp \

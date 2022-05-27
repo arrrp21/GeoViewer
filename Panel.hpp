@@ -18,7 +18,9 @@ public:
 private:
     static constexpr double minGain{0.5};
     static constexpr double maxGain{2.0};
-    static constexpr double defaultGain{1.0};
+    static constexpr double defaultGainLower{1.0};
+    static constexpr double defaultGainUpper{1.5};
+    static constexpr double multiplier{100.0};
 
     Ui::Panel *ui;
     std::optional<int> imageHeight{std::nullopt};
@@ -28,6 +30,8 @@ private:
     void connectSlidersConstraints();
 
 signals:
-    void sliderGainValueChanged(int, int, int);
+    void sliderGainChanged(int, int, double, double);
     void buttonEqualizeHistClicked(int, int);
+    void buttonRotateClicked();
+    void buttonResetClicked();
 };
