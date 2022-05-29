@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -40,8 +40,15 @@
     <addaction name="actionGainPanel"/>
     <addaction name="actionHighPassFilter"/>
    </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionGpuAcceleration"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuTools"/>
+   <addaction name="menuSettings"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="actionOpen">
@@ -83,6 +90,14 @@
   <action name="actionHighPassFilter">
    <property name="text">
     <string>High pass filter</string>
+   </property>
+  </action>
+  <action name="actionGpuAcceleration">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>GPU Acceleration</string>
    </property>
   </action>
  </widget>

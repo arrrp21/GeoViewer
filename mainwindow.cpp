@@ -18,6 +18,7 @@
 #include "ImageLabel.hpp"
 #include "QImageWrapper.hpp"
 #include "CommonImageTransformer.hpp"
+#include "GpuImageTransformer.hpp"
 #include "Visitor.hpp"
 #include "fmt/format.h"
 #include "Panel.hpp"
@@ -105,7 +106,10 @@ void MainWindow::on_actionOpenTriggered(bool)
     std::visit(Visitor{
          [this](GprData& gprData) {
             imageWrapper = std::make_unique<QImageWrapper>(gprData);
-            imageTransformer = std::make_unique<CommonImageTransformer>(*imageWrapper);
+            if (ui->actionGpuAcceleration->isChecked())
+                imageTransformer = std::make_unique<GpuImageTransformer>(*imageWrapper);
+            else
+                imageTransformer = std::make_unique<CommonImageTransformer>(*imageWrapper);
             imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
             imageLabel->adjustSize();
             ui->actionGainPanel->setChecked(true);
@@ -248,6 +252,18 @@ void MainWindow::on_actionHighPassFilterTriggered(bool)
     imageLabel->adjustSize();
 }
 
+void MainWindow::on_actionGpuAccelerationToggled(bool toggled)
+{
+    qDebug() << "on_actionGpuAccelerationToggled";
+    if (imageTransformer and imageWrapper)
+    {
+        if (toggled)
+            imageTransformer = std::make_unique<GpuImageTransformer>(*imageWrapper);
+        else
+            imageTransformer = std::make_unique<CommonImageTransformer>(*imageWrapper);
+    }
+}
+
 void MainWindow::on_mouseWheelUsed(QPoint angleDelta)
 {
     float factor = (angleDelta.y() > 0) ? (1.0f + scaleFactorStep) : (1.0f - scaleFactorStep);
@@ -328,6 +344,7 @@ void MainWindow::connectSignals()
     connect(ui->actionRotate90,       SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRotate90Triggered(bool))                   );
     connect(ui->actionGainPanel,      SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGainPannelToggled(bool))                   );
     connect(ui->actionHighPassFilter, SIGNAL(triggered(bool)),                             this,  SLOT(on_actionHighPassFilterTriggered(bool))             );
+    connect(ui->actionGpuAcceleration,SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGpuAccelerationToggled(bool))              );
     connect(imageLabel,               SIGNAL(mouseWheelUsed(QPoint)),                      this,  SLOT(on_mouseWheelUsed(QPoint))                          );
     connect(imageLabel,               SIGNAL(mousePressedMoved(int,int)),                  this,  SLOT(on_mousePressedMoved(int,int))                      );
     connect(imageLabel,               SIGNAL(mouseMoved(int,int)),                         this,  SLOT(on_mouseMoved(int,int))                             );

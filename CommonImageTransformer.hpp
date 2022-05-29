@@ -33,4 +33,3 @@ private:
     template <class MaskType>
     void applyFilter(const MaskType& mask);
 };
-

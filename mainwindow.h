@@ -60,6 +60,7 @@ public slots:
     void on_actionGrayscaleTriggered(bool);
     void on_actionRotate90Triggered(bool);
     void on_actionHighPassFilterTriggered(bool);
+    void on_actionGpuAccelerationToggled(bool);
     void on_mouseWheelUsed(QPoint angleDelta);
     void on_mousePressedMoved(int x, int y);
     void on_mouseMoved(int x, int y);

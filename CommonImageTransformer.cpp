@@ -1,7 +1,6 @@
 #include "CommonImageTransformer.hpp"
 #include "QImageWrapper.hpp"
 #include "Mask.hpp"
-#include <QVariant>
 
 CommonImageTransformer::CommonImageTransformer(QImageWrapper& imageWrapper)
  : imageWrapper{imageWrapper}

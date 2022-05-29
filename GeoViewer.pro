@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     CommonImageTransformer.cpp \
     GprData.cpp \
+    GpuImageTransformer.cpp \
     ImageData.cpp \
     ImageLabel.cpp \
     Panel.cpp \
@@ -27,6 +28,7 @@ INCLUDEPATH += "$$PWD/CL" \
 HEADERS += \
     CommonImageTransformer.hpp \
     GprData.hpp \
+    GpuImageTransformer.hpp \
     ImageData.hpp \
     ImageLabel.hpp \
     ImageTransformer.hpp \
@@ -51,3 +53,8 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+DISTFILES += \
+    kernels/GpuImageTransformer.cl \
+    kernels/test.cl \
+    kernels/test2.cl
