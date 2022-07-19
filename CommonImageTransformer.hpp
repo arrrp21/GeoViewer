@@ -1,14 +1,11 @@
 #pragma once
-#include <limits>
-
-#include "GprData.hpp"
 #include "ImageTransformer.hpp"
 
+class ImageData;
 class QImageWrapper;
 
-using limits = std::numeric_limits<GprData::DataType>;
-using LookupTable = std::array<GprData::DataType, limits::max() - limits::min() + 1>;
-
+namespace ImageTransforming
+{
 class CommonImageTransformer : public ImageTransformer
 {
 public:
@@ -20,6 +17,7 @@ public:
     void gain(int from, int to, double gainLower, double gainUpper) override;
     void equalizeHistogram(int from, int to) override;
     void applyFilter(const Mask& mask) override;
+    void backgroundRemoval() override;
 
 private:
     QImageWrapper& imageWrapper;
@@ -27,9 +25,10 @@ private:
     LookupTable createLut(GprData::DataType min, GprData::DataType max);
     LookupTable createLut(float contrast);
 
-    GprData::DataType min(int from, int to);
-    GprData::DataType max(int from, int to);
+    GprData::DataType min(int from, int to, const ImageData& imageData);
+    GprData::DataType max(int from, int to, const ImageData& imageData);
 
     template <class MaskType>
     void applyFilter(const MaskType& mask);
 };
+} // namespace ImageTransforming

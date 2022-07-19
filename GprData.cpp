@@ -52,6 +52,7 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
 
     QTextStreamWrapper inputTextStream(&file);
 
+    ScanDirection SCAN_DIRECTION = ScanDirection::None;
     double RANGE = 0;
     double PROP_VEL = 0;
     std::uint32_t N_ACQ_SAMPLE = 0;
@@ -64,6 +65,13 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
         QString parameterName{inputTextStream.readLine()};
 
         bool isOk;
+        if (parameterName == "SCAN_DIRECTION")
+        {
+            QString scanDirection{inputTextStream.readLine()};
+            if (scanDirection.trimmed() == "L")
+                SCAN_DIRECTION = ScanDirection::L;
+        }
+
         if (parameterName == "RANGE")
         {
             QString range{inputTextStream.readLine()};
@@ -131,11 +139,12 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
     }
 
     file.close();
-    return GprData(RANGE, PROP_VEL, N_ACQ_SAMPLE, N_ACQ_SWEEP, std::move(data));
+    return GprData(SCAN_DIRECTION, RANGE, PROP_VEL, N_ACQ_SAMPLE, N_ACQ_SWEEP, std::move(data));
 }
 
-GprData::GprData(double RANGE, double PROP_VEL, uint32_t N_ACQ_SAMPLE, uint32_t N_ACQ_SWEEP, std::vector<DataType> &&data)
-    : RANGE{RANGE}
+GprData::GprData(ScanDirection SCAN_DIRECTION, double RANGE, double PROP_VEL, uint32_t N_ACQ_SAMPLE, uint32_t N_ACQ_SWEEP, std::vector<DataType> &&data)
+    : SCAN_DIRECTION{SCAN_DIRECTION}
+    , RANGE{RANGE}
     , PROP_VEL{PROP_VEL}
     , N_ACQ_SAMPLE{N_ACQ_SAMPLE}
     , N_ACQ_SWEEP{N_ACQ_SWEEP}
@@ -144,7 +153,8 @@ GprData::GprData(double RANGE, double PROP_VEL, uint32_t N_ACQ_SAMPLE, uint32_t 
 }
 
 GprData::GprData(GprData&& other)
-    : RANGE{other.RANGE}
+    : SCAN_DIRECTION{other.SCAN_DIRECTION}
+    , RANGE{other.RANGE}
     , PROP_VEL{other.PROP_VEL}
     , N_ACQ_SAMPLE{other.N_ACQ_SAMPLE}
     , N_ACQ_SWEEP{other.N_ACQ_SWEEP}
@@ -154,6 +164,7 @@ GprData::GprData(GprData&& other)
 
 GprData& GprData::operator=(GprData&& other)
 {
+    SCAN_DIRECTION = other.SCAN_DIRECTION;
     RANGE = other.RANGE;
     PROP_VEL = other.PROP_VEL;
     N_ACQ_SAMPLE = other.N_ACQ_SAMPLE;

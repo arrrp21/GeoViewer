@@ -13,7 +13,10 @@ class QScrollBar;
 QT_END_NAMESPACE
 
 class QImageWrapper;
+namespace ImageTransforming
+{
 class ImageTransformer;
+} // namespace ImageTransforming
 class ImageLabel;
 class Panel;
 
@@ -27,7 +30,7 @@ public:
 
 private:
     Ui::MainWindow *ui;
-    std::unique_ptr<ImageTransformer> imageTransformer;
+    std::unique_ptr<ImageTransforming::ImageTransformer> imageTransformer;
     std::unique_ptr<QImageWrapper> imageWrapper;
     QImage image;
     ImageLabel* imageLabel;
@@ -60,6 +63,7 @@ public slots:
     void on_actionGrayscaleTriggered(bool);
     void on_actionRotate90Triggered(bool);
     void on_actionHighPassFilterTriggered(bool);
+    void on_actionBackgroundRemovalTriggered(bool);
     void on_actionGpuAccelerationToggled(bool);
     void on_mouseWheelUsed(QPoint angleDelta);
     void on_mousePressedMoved(int x, int y);

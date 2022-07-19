@@ -2,6 +2,8 @@
 #include "QImageWrapper.hpp"
 #include "Mask.hpp"
 
+namespace ImageTransforming
+{
 CommonImageTransformer::CommonImageTransformer(QImageWrapper& imageWrapper)
  : imageWrapper{imageWrapper}
 {
@@ -66,6 +68,9 @@ void CommonImageTransformer::gain(int from, int to, float value)
 
 void CommonImageTransformer::gain(int from, int to, double gainLower, double gainUpper)
 {
+    if (from < 0 or to >= imageWrapper.height())
+        return;
+
     ImageData newImageData{imageWrapper.getOriginalImageData()};
 
     double step = (gainUpper - gainLower) / (to - from);
@@ -86,11 +91,13 @@ void CommonImageTransformer::gain(int from, int to, double gainLower, double gai
 
 void CommonImageTransformer::equalizeHistogram(int from, int to)
 {
+    const ImageData& imageData = imageWrapper.getImageData();
+
     qDebug() << "equalizeHistogram from: " << from << ", to: " << to;
-    qDebug() << "min: " << min(from, to) << ", max: " << max(from, to);
+    qDebug() << "min: " << min(from, to, imageData) << ", max: " << max(from, to, imageData);
 
     ImageData newImageData{imageWrapper.getImageData()};
-    LookupTable lut = createLut(min(from, to), max(from, to));
+    LookupTable lut = createLut(min(from, to, imageData), max(from, to, imageData));
 
     qDebug() << "lut created";
 
@@ -103,15 +110,42 @@ void CommonImageTransformer::equalizeHistogram(int from, int to)
     }
     qDebug() << "before setNewImage";
 
-    imageWrapper.setNewImage(std::move(newImageData));
     qDebug() << "after setNewImage";
-    qDebug() << "min: " << min(from, to) << ", max: " << max(from, to);
+    qDebug() << "min: " << min(from, to, newImageData) << ", max: " << max(from, to, newImageData);
     qDebug() << "====================================";
+    imageWrapper.setNewImage(std::move(newImageData));
 }
 
 void CommonImageTransformer::applyFilter(const Mask& mask)
 {
     std::visit([this] (auto&& mask) {applyFilter(mask); }, mask);
+}
+
+void CommonImageTransformer::backgroundRemoval()
+{
+    int height = imageWrapper.height();
+    int width = imageWrapper.width();
+
+    const ImageData& imageData = imageWrapper.getOriginalImageData();
+    ImageData newImageData{imageData};
+
+    for (int i = 0; i < height; i++)
+    {
+        std::uint32_t sum = 0;
+        for (int j = 0; j < width; j++)
+        {
+            sum += imageData.at(i, j);
+        }
+        GprData::DataType mean = static_cast<GprData::DataType>(std::lround(static_cast<double>(sum)/width));
+
+        for (int j = 0; j < width; j++)
+        {
+            GprData::DataType value = imageData.at(i, j) <= mean ? 0 : imageData.at(i, j) - mean;
+            newImageData.at(i, j) = value;
+        }
+    }
+
+    imageWrapper.setNewImage(std::move(newImageData));
 }
 
 template <class MaskType>
@@ -187,9 +221,8 @@ LookupTable CommonImageTransformer::createLut(float contrast)
     return lut;
 }
 
-GprData::DataType CommonImageTransformer::min(int from, int to)
+GprData::DataType CommonImageTransformer::min(int from, int to, const ImageData& imageData)
 {
-    const ImageData& imageData = imageWrapper.getOriginalImageData();
     GprData::DataType min = imageData[0];
 
     for (auto i = from; i < to; i++)
@@ -200,9 +233,8 @@ GprData::DataType CommonImageTransformer::min(int from, int to)
     return min;
 }
 
-GprData::DataType CommonImageTransformer::max(int from, int to)
+GprData::DataType CommonImageTransformer::max(int from, int to, const ImageData& imageData)
 {
-    const ImageData& imageData = imageWrapper.getOriginalImageData();
     GprData::DataType max = imageData[0];
 
     for (auto i = from; i < to; i++)
@@ -212,3 +244,4 @@ GprData::DataType CommonImageTransformer::max(int from, int to)
 
     return max;
 }
+} // namespace ImageTransforming

@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -39,6 +39,7 @@
     <addaction name="actionRotate90"/>
     <addaction name="actionGainPanel"/>
     <addaction name="actionHighPassFilter"/>
+    <addaction name="actionBackgroundRemoval"/>
    </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
@@ -98,6 +99,11 @@
    </property>
    <property name="text">
     <string>GPU Acceleration</string>
+   </property>
+  </action>
+  <action name="actionBackgroundRemoval">
+   <property name="text">
+    <string>Background removal</string>
    </property>
   </action>
  </widget>

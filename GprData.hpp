@@ -11,17 +11,24 @@
 struct GprData;
 std::variant<GprData, QString> tryCreateGprData(QFile&);
 
+enum class ScanDirection : std::uint8_t
+{
+    None,
+    L,
+};
+
 struct GprData
 {
     using DataType = std::uint16_t;
 
     GprData() = delete;
-    GprData(double, double, std::uint32_t, std::uint32_t, std::vector<DataType>&&);
+    GprData(ScanDirection, double, double, std::uint32_t, std::uint32_t, std::vector<DataType>&&);
     GprData(const GprData&) = delete;
     GprData(GprData&&);
     GprData& operator=(const GprData&) = delete;
     GprData& operator=(GprData&&);
 
+    ScanDirection SCAN_DIRECTION = ScanDirection::None;
     double RANGE;
     double PROP_VEL;
     int N_ACQ_SAMPLE;

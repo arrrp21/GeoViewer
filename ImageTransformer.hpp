@@ -1,6 +1,11 @@
 #pragma once
 #include <variant>
+#include <array>
 
+#include "GprData.hpp"
+
+namespace ImageTransforming
+{
 namespace details
 {
 template <typename T>
@@ -8,6 +13,8 @@ class Mask;
 }
 
 using Mask = std::variant<details::Mask<int>, details::Mask<double>>;
+using limits = std::numeric_limits<GprData::DataType>;
+using LookupTable = std::array<GprData::DataType, limits::max() - limits::min() + 1>;
 
 class ImageTransformer
 {
@@ -19,4 +26,6 @@ public:
     virtual void gain(int from, int to, double gainLower, double gainUpper) = 0;
     virtual void equalizeHistogram(int from, int to) = 0;
     virtual void applyFilter(const Mask&) = 0;
+    virtual void backgroundRemoval() = 0;
 };
+} // namespace ImageTransforming

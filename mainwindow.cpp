@@ -107,9 +107,11 @@ void MainWindow::on_actionOpenTriggered(bool)
          [this](GprData& gprData) {
             imageWrapper = std::make_unique<QImageWrapper>(gprData);
             if (ui->actionGpuAcceleration->isChecked())
-                imageTransformer = std::make_unique<GpuImageTransformer>(*imageWrapper);
+                imageTransformer = std::make_unique<ImageTransforming::GpuImageTransformer>(*imageWrapper);
             else
-                imageTransformer = std::make_unique<CommonImageTransformer>(*imageWrapper);
+                imageTransformer = std::make_unique<ImageTransforming::CommonImageTransformer>(*imageWrapper);
+            if (gprData.SCAN_DIRECTION == ScanDirection::L)
+                imageTransformer->rotate90();
             imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
             imageLabel->adjustSize();
             ui->actionGainPanel->setChecked(true);
@@ -246,8 +248,15 @@ void MainWindow::on_actionRotate90Triggered(bool)
 
 void MainWindow::on_actionHighPassFilterTriggered(bool)
 {
-    details::Mask<int> highPassFilter{3, 3, {{0, -1, 0}, {-1, 4, -1}, {0, -1, 0}}};
-    imageTransformer->applyFilter(Mask{highPassFilter});
+    ImageTransforming::details::Mask<int> highPassFilter{3, 3, {{0, -1, 0}, {-1, 4, -1}, {0, -1, 0}}};
+    imageTransformer->applyFilter(ImageTransforming::Mask{highPassFilter});
+    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
+    imageLabel->adjustSize();
+}
+
+void MainWindow::on_actionBackgroundRemovalTriggered(bool)
+{
+    imageTransformer->backgroundRemoval();
     imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
     imageLabel->adjustSize();
 }
@@ -258,9 +267,9 @@ void MainWindow::on_actionGpuAccelerationToggled(bool toggled)
     if (imageTransformer and imageWrapper)
     {
         if (toggled)
-            imageTransformer = std::make_unique<GpuImageTransformer>(*imageWrapper);
+            imageTransformer = std::make_unique<ImageTransforming::GpuImageTransformer>(*imageWrapper);
         else
-            imageTransformer = std::make_unique<CommonImageTransformer>(*imageWrapper);
+            imageTransformer = std::make_unique<ImageTransforming::CommonImageTransformer>(*imageWrapper);
     }
 }
 
@@ -338,20 +347,21 @@ void MainWindow::on_buttonRotateClicked()
 void MainWindow::connectSignals()
 {
     //      sender                        signal                                        receiver    slot
-    connect(ui->actionOpen,           SIGNAL(triggered(bool)),                             this,  SLOT(on_actionOpenTriggered(bool))                       );
-    connect(ui->actionSave,           SIGNAL(triggered(bool)),                             this,  SLOT(on_actionSaveTriggered(bool))                       );
-    connect(ui->actionGrayscale,      SIGNAL(triggered(bool)),                             this,  SLOT(on_actionGrayscaleTriggered(bool))                  );
-    connect(ui->actionRotate90,       SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRotate90Triggered(bool))                   );
-    connect(ui->actionGainPanel,      SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGainPannelToggled(bool))                   );
-    connect(ui->actionHighPassFilter, SIGNAL(triggered(bool)),                             this,  SLOT(on_actionHighPassFilterTriggered(bool))             );
-    connect(ui->actionGpuAcceleration,SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGpuAccelerationToggled(bool))              );
-    connect(imageLabel,               SIGNAL(mouseWheelUsed(QPoint)),                      this,  SLOT(on_mouseWheelUsed(QPoint))                          );
-    connect(imageLabel,               SIGNAL(mousePressedMoved(int,int)),                  this,  SLOT(on_mousePressedMoved(int,int))                      );
-    connect(imageLabel,               SIGNAL(mouseMoved(int,int)),                         this,  SLOT(on_mouseMoved(int,int))                             );
-    connect(panel,                    SIGNAL(buttonRotateClicked()),                       this,  SLOT(on_buttonRotateClicked())                           );
-    connect(panel,                    SIGNAL(sliderGainChanged(int, int, double, double)), this,  SLOT(on_sliderGainChanged(int, int, double, double))     );
-    connect(panel,                    SIGNAL(buttonEqualizeHistClicked(int, int)),         this,  SLOT(on_buttonEqualizeHistClicked(int, int))             );
-    connect(panel,                    SIGNAL(buttonResetClicked()),                        this,  SLOT(on_buttonResetClicked())                            );
+    connect(ui->actionOpen,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionOpenTriggered(bool))                       );
+    connect(ui->actionSave,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionSaveTriggered(bool))                       );
+    connect(ui->actionGrayscale,          SIGNAL(triggered(bool)),                             this,  SLOT(on_actionGrayscaleTriggered(bool))                  );
+    connect(ui->actionRotate90,           SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRotate90Triggered(bool))                   );
+    connect(ui->actionGainPanel,          SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGainPannelToggled(bool))                   );
+    connect(ui->actionHighPassFilter,     SIGNAL(triggered(bool)),                             this,  SLOT(on_actionHighPassFilterTriggered(bool))             );
+    connect(ui->actionBackgroundRemoval,  SIGNAL(triggered(bool)),                             this,  SLOT(on_actionBackgroundRemovalTriggered(bool))          );
+    connect(ui->actionGpuAcceleration,    SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGpuAccelerationToggled(bool))              );
+    connect(imageLabel,                   SIGNAL(mouseWheelUsed(QPoint)),                      this,  SLOT(on_mouseWheelUsed(QPoint))                          );
+    connect(imageLabel,                   SIGNAL(mousePressedMoved(int,int)),                  this,  SLOT(on_mousePressedMoved(int,int))                      );
+    connect(imageLabel,                   SIGNAL(mouseMoved(int,int)),                         this,  SLOT(on_mouseMoved(int,int))                             );
+    connect(panel,                        SIGNAL(buttonRotateClicked()),                       this,  SLOT(on_buttonRotateClicked())                           );
+    connect(panel,                        SIGNAL(sliderGainChanged(int, int, double, double)), this,  SLOT(on_sliderGainChanged(int, int, double, double))     );
+    connect(panel,                        SIGNAL(buttonEqualizeHistClicked(int, int)),         this,  SLOT(on_buttonEqualizeHistClicked(int, int))             );
+    connect(panel,                        SIGNAL(buttonResetClicked()),                        this,  SLOT(on_buttonResetClicked())                            );
 }
 
 /*void MainWindow::on_actionGrayscaleTriggered(bool)

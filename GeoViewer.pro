@@ -33,6 +33,8 @@ HEADERS += \
     ImageLabel.hpp \
     ImageTransformer.hpp \
     Mask.hpp \
+    OpenCLErrors.hpp \
+    OpenCLUtils.hpp \
     Panel.hpp \
     QImageWrapper.hpp \
     Visitor.hpp \

@@ -14,6 +14,8 @@
 
 class QImageWrapper;
 
+namespace ImageTransforming
+{
 
 class GpuImageTransformer : public ImageTransformer
 {
@@ -26,6 +28,7 @@ public:
     void gain(int from, int to, double gainLower, double gainUpper) override;
     void equalizeHistogram(int from, int to) override;
     void applyFilter(const Mask& mask) override;
+    void backgroundRemoval() override;
 
 private:
     QImageWrapper& imageWrapper;
@@ -33,6 +36,7 @@ private:
     cl_context context;
     cl_device_id device;
     cl_kernel kernelRotate90{nullptr};
+    cl_kernel kernelLinearGain{nullptr};
 
     struct Kernels
     {
@@ -43,7 +47,8 @@ private:
     const std::vector<Kernels> kernels = {
         {
             "GpuImageTransformer.cl",
-            {{"rotate90", &kernelRotate90}}
+            {{"rotate90",   &kernelRotate90  },
+             {"linearGain", &kernelLinearGain}}
         }};
 
     void setupKernels(cl_context context);
@@ -51,4 +56,8 @@ private:
     cl_kernel createKernel(cl_program program, const char* functionName);
 
     const QString kernelsLocation = "../GeoViewer/kernels/";
+
+    bool checkError(cl_int error, std::optional<QString> functionName = std::nullopt);
+    size_t upToMultipleOf(int multiplier, size_t value);
 };
+} // namespace ImageTransforming
