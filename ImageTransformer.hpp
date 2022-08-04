@@ -4,7 +4,7 @@
 
 #include "GprData.hpp"
 
-namespace ImageTransforming
+namespace image_transforming
 {
 namespace details
 {
@@ -27,5 +27,6 @@ public:
     virtual void equalizeHistogram(int from, int to) = 0;
     virtual void applyFilter(const Mask&) = 0;
     virtual void backgroundRemoval() = 0;
+    virtual void trimTop() = 0;
 };
-} // namespace ImageTransforming
+} // namespace image_transforming

@@ -6,17 +6,31 @@ class ImageLabel : public QLabel
 {
     Q_OBJECT
 public:
-    ImageLabel(QWidget* parent = nullptr);
+    ImageLabel(float& scaleFactor, QWidget* parent = nullptr);
 
 public:
-    virtual void mouseMoveEvent(QMouseEvent* event);
-    virtual void mousePressEvent(QMouseEvent* event);
-    virtual void mouseReleaseEvent(QMouseEvent* event);
-    virtual void wheelEvent(QWheelEvent* event);
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void wheelEvent(QWheelEvent* event) override;
+    void paintEvent(QPaintEvent*) override;
+    void setXStep(double xStep);
+    void setYStep(double yStep);
+    static constexpr int leftAxisWidth = 40;
+    static constexpr int bottomAxisHeight = 30;
 
 private:
+    void drawAxes(QPainter&);
+    void drawXAxis(QPainter&);
+    void drawYAxis(QPainter&);
+    void drawUnit(QPainter&);
     QPoint currentCursorPosition;
     bool isMousePressed;
+    float& scaleFactor;
+    std::optional<double> xStep{std::nullopt};
+    std::optional<double> yStep{std::nullopt};
+    static constexpr double yAxisStep{0.5};
+    static constexpr double xAxisStep{1.0};
 
 signals:
     void mouseWheelUsed(QPoint angleDelta);

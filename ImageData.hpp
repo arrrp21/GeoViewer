@@ -18,6 +18,8 @@ public:
     const uchar* getByteData();
     GprData::DataType* getData();
     const GprData::DataType* getData() const;
+    GprData::DataType* getDataAt(int row, int col);
+    const GprData::DataType* getDataAt(int row, int col) const;
     int getSizeInBytes() const;
     int getSize() const;
     int getWidth() const;
@@ -27,6 +29,7 @@ public:
     const GprData::DataType& at(int row, int col) const;
     GprData::DataType& operator[](int index);
     const GprData::DataType& operator[](int index) const;
+    void trimTop(int row);
 
     ~ImageData();
 private:

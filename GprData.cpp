@@ -55,8 +55,8 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
     ScanDirection SCAN_DIRECTION = ScanDirection::None;
     double RANGE = 0;
     double PROP_VEL = 0;
-    std::uint32_t N_ACQ_SAMPLE = 0;
-    std::uint32_t N_ACQ_SWEEP = 0;
+    int N_ACQ_SAMPLE = 0;
+    int N_ACQ_SWEEP = 0;
     double X_STEP = 0;
     std::vector<GprData::DataType> data;
 
@@ -97,7 +97,7 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
         if (parameterName == "N_ACQ_SAMPLE")
         {
             QString nAcqSample{inputTextStream.readLine()};
-            N_ACQ_SAMPLE = nAcqSample.toDouble(&isOk);
+            N_ACQ_SAMPLE = nAcqSample.toInt(&isOk);
             if (not isOk)
             {
                 file.close();
@@ -108,7 +108,7 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
         if (parameterName == "N_ACQ_SWEEP")
         {
             QString nAcqSweep{inputTextStream.readLine()};
-            N_ACQ_SWEEP = nAcqSweep.toDouble(&isOk);
+            N_ACQ_SWEEP = nAcqSweep.toInt(&isOk);
             if (not isOk)
             {
                 file.close();
@@ -119,7 +119,10 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
         if (parameterName == "X_STEP")
         {
             QString xStep{inputTextStream.readLine()};
+            qDebug() << xStep;
             X_STEP = xStep.toDouble(&isOk);
+            qDebug() << X_STEP;
+            qDebug() << isOk;
             if (not isOk)
             {
                 file.close();
@@ -139,15 +142,23 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
     }
 
     file.close();
-    return GprData(SCAN_DIRECTION, RANGE, PROP_VEL, N_ACQ_SAMPLE, N_ACQ_SWEEP, std::move(data));
+    return GprData(SCAN_DIRECTION, RANGE, PROP_VEL, N_ACQ_SAMPLE, N_ACQ_SWEEP, X_STEP, std::move(data));
 }
 
-GprData::GprData(ScanDirection SCAN_DIRECTION, double RANGE, double PROP_VEL, uint32_t N_ACQ_SAMPLE, uint32_t N_ACQ_SWEEP, std::vector<DataType> &&data)
+GprData::GprData(
+    ScanDirection SCAN_DIRECTION,
+    double RANGE,
+    double PROP_VEL,
+    int N_ACQ_SAMPLE,
+    int N_ACQ_SWEEP,
+    double X_STEP,
+    std::vector<DataType> &&data)
     : SCAN_DIRECTION{SCAN_DIRECTION}
     , RANGE{RANGE}
     , PROP_VEL{PROP_VEL}
     , N_ACQ_SAMPLE{N_ACQ_SAMPLE}
     , N_ACQ_SWEEP{N_ACQ_SWEEP}
+    , X_STEP{X_STEP}
     , data(std::move(data))
 {
 }
@@ -158,6 +169,7 @@ GprData::GprData(GprData&& other)
     , PROP_VEL{other.PROP_VEL}
     , N_ACQ_SAMPLE{other.N_ACQ_SAMPLE}
     , N_ACQ_SWEEP{other.N_ACQ_SWEEP}
+    , X_STEP{other.X_STEP}
     , data(std::move(other.data))
 {
 }
@@ -169,6 +181,7 @@ GprData& GprData::operator=(GprData&& other)
     PROP_VEL = other.PROP_VEL;
     N_ACQ_SAMPLE = other.N_ACQ_SAMPLE;
     N_ACQ_SWEEP = other.N_ACQ_SWEEP;
+    X_STEP = other.X_STEP;
     data = std::move(other.data);
 }
 

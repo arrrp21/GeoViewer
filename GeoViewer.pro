@@ -35,6 +35,7 @@ HEADERS += \
     Mask.hpp \
     OpenCLErrors.hpp \
     OpenCLUtils.hpp \
+    Operation.hpp \
     Panel.hpp \
     QImageWrapper.hpp \
     Visitor.hpp \

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>960</width>
     <height>600</height>
    </rect>
   </property>
@@ -19,7 +19,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>960</width>
      <height>26</height>
     </rect>
    </property>
@@ -35,11 +35,11 @@
     <property name="title">
      <string>Tools</string>
     </property>
-    <addaction name="actionGrayscale"/>
     <addaction name="actionRotate90"/>
     <addaction name="actionGainPanel"/>
     <addaction name="actionHighPassFilter"/>
     <addaction name="actionBackgroundRemoval"/>
+    <addaction name="actionTrimTop"/>
    </widget>
    <widget class="QMenu" name="menuSettings">
     <property name="title">
@@ -104,6 +104,11 @@
   <action name="actionBackgroundRemoval">
    <property name="text">
     <string>Background removal</string>
+   </property>
+  </action>
+  <action name="actionTrimTop">
+   <property name="text">
+    <string>Trim top</string>
    </property>
   </action>
  </widget>

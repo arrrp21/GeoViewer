@@ -12,6 +12,7 @@ class Panel : public QWidget
 public:
     explicit Panel(QWidget *parent = nullptr);
     void setImageHeight(int imageHeight);
+    std::pair<double, double> getLinearGainValues();
     ~Panel();
 
 
@@ -31,7 +32,10 @@ private:
 
 signals:
     void sliderGainChanged(int, int, double, double);
+    void sliderRangeChanged(int, int);
     void buttonEqualizeHistClicked(int, int);
     void buttonRotateClicked();
     void buttonResetClicked();
+    void rbEqualizeHistChecked();
+    void rbGainChecked();
 };

@@ -10,6 +10,7 @@
 #include <QScrollBar>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QPainter>
 
 #include <ios>
 #include <cmath>
@@ -24,21 +25,10 @@
 #include "Panel.hpp"
 #include "Mask.hpp"
 
-
-#define CL_HPP_MINIMUM_OPENCL_VERSION 200
-#define CL_HPP_TARGET_OPENCL_VERSION 200
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wunused-declarations"
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include <CL/cl2.hpp>
-#pragma GCC diagnostic pop
-
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , imageLabel(new ImageLabel)
+    , imageLabel(new ImageLabel(scaleFactor))
     , panel(new Panel(this))
     , scrollArea(new QScrollArea)
     , layout(new QVBoxLayout)
@@ -82,12 +72,31 @@ void MainWindow::scaleImage(float factor)
         return;
 
     scaleFactor = newScaleFactor;
-    imageLabel->resize(scaleFactor * imageLabel->pixmap(Qt::ReturnByValue).size());
+    QSize newSize = scaleFactor * imageLabel->pixmap(Qt::ReturnByValue).size();
+    newSize.setHeight(newSize.height() + ImageLabel::bottomAxisHeight);
+    newSize.setWidth(newSize.width() + ImageLabel::leftAxisWidth);
+    imageLabel->resize(newSize);
 }
 
 void MainWindow::adjustScrollBar(QScrollBar *scrollBar, float factor)
 {
     scrollBar->setValue(static_cast<int>(factor * scrollBar->value() + ((factor - 1) * scrollBar->pageStep()/2)));
+}
+
+void MainWindow::drawImage()
+{
+    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
+    imageLabel->adjustSize();
+}
+
+void MainWindow::refreshImage()
+{
+    int x = scrollArea->horizontalScrollBar()->value();
+    int y = scrollArea->verticalScrollBar()->value();
+    drawImage();
+    scaleImage(1.0f);
+    scrollArea->horizontalScrollBar()->setValue(x);
+    scrollArea->verticalScrollBar()->setValue(y);
 }
 
 void MainWindow::on_actionOpenTriggered(bool)
@@ -106,14 +115,16 @@ void MainWindow::on_actionOpenTriggered(bool)
     std::visit(Visitor{
          [this](GprData& gprData) {
             imageWrapper = std::make_unique<QImageWrapper>(gprData);
+            qDebug() << gprData;
             if (ui->actionGpuAcceleration->isChecked())
-                imageTransformer = std::make_unique<ImageTransforming::GpuImageTransformer>(*imageWrapper);
+                imageTransformer = std::make_unique<image_transforming::GpuImageTransformer>(*imageWrapper);
             else
-                imageTransformer = std::make_unique<ImageTransforming::CommonImageTransformer>(*imageWrapper);
+                imageTransformer = std::make_unique<image_transforming::CommonImageTransformer>(*imageWrapper);
             if (gprData.SCAN_DIRECTION == ScanDirection::L)
                 imageTransformer->rotate90();
-            imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
-            imageLabel->adjustSize();
+            imageLabel->setXStep(gprData.X_STEP);
+            imageLabel->setYStep(gprData.RANGE / 2 * gprData.PROP_VEL / gprData.N_ACQ_SAMPLE);
+            drawImage();
             ui->actionGainPanel->setChecked(true);
             panel->setImageHeight(imageWrapper->getImage().height());
             scrollArea->setVisible(true);
@@ -143,122 +154,34 @@ void MainWindow::on_actionGainPannelToggled(bool checked)
     panel->setVisible(checked);
 }
 
-#include <iostream>
-
-void MainWindow::on_actionGrayscaleTriggered(bool)
-{
-    std::vector<cl::Platform> platforms;
-    cl::Platform::get(&platforms);
-
-    std::vector<cl::Device> devices;
-    platforms.front().getDevices(CL_DEVICE_TYPE_GPU, &devices);
-
-    cl::Context context(devices.front());
-    cl_device_id device = devices.front().get();
-    cl_context myctx = context.get();
-
-    cl_int err;
-
-    //cl::CommandQueue commandQueue(context, devices.front());
-    //cl_command_queue myqueue = commandQueue.get();
-
-    cl_command_queue myqueue = clCreateCommandQueue(myctx, device, 0, &err);
-    if (err != 0)
-    {
-        qDebug () << "clCreateCommandQueue err: " << err;
-    }
-
-    uchar* src = image.bits();
-    cl_mem input = clCreateBuffer(myctx, CL_MEM_READ_ONLY, image.sizeInBytes(), NULL, &err);
-    if (err != 0)
-    {
-        qDebug() << "input clCreateBuffer err: " << err;
-    }
-
-    cl_mem output = clCreateBuffer(myctx, CL_MEM_WRITE_ONLY, image.sizeInBytes(), NULL, &err);
-    if (err != 0)
-    {
-        qDebug() << "output clCreateBuffer err: " << err;
-    }
-
-    err = clEnqueueWriteBuffer(myqueue, input, CL_TRUE, 0, image.sizeInBytes(), (void*)src, 0, NULL, NULL);
-    if (err != 0)
-    {
-        qDebug() << "clEnqueueWriteBuffer err: " << err;
-    }
-
-    QFile file("D:\\praca_magisterska\\GeoViewer\\GeoViewer\\kernels\\test2.cl");
-    file.open(QFile::ReadOnly);
-    std::string fileContentStr = file.readAll().toStdString();
-    const char* fileContent = fileContentStr.c_str();
-    cl_program myprog = clCreateProgramWithSource(myctx, 1, (const char**)&fileContent, 0, &err);
-    if (err != 0)
-    {
-        qDebug() << "clCreateProgramWithSource err: " << err;
-    }
-
-    err = clBuildProgram(myprog, 0, NULL, NULL, NULL, NULL);
-    if (err != 0)
-    {
-        qDebug() << "clBuildProgram err: " << err;
-    }
-
-    cl_kernel mykernel = clCreateKernel(myprog, "rgb2gray", &err);
-    if (err != 0)
-    {
-        qDebug() << "clCreateKernel err: " << err;
-    }
-
-    size_t width = static_cast<size_t>(image.width());
-    size_t height = static_cast<size_t>(image.height());
-    clSetKernelArg(mykernel, 0, sizeof(cl_mem), (void*)&input);
-    clSetKernelArg(mykernel, 1, sizeof(cl_mem), (void*)&output);
-    clSetKernelArg(mykernel, 2, sizeof(cl_int), (void*)&width);
-    clSetKernelArg(mykernel, 3, sizeof(cl_int), (void*)&height);
-
-    size_t localws[2] = {8, 8};
-    size_t globalws[2] = {width, height};
-    qDebug() << "width: " << width << " height: " << height;
-
-    err = clEnqueueNDRangeKernel(myqueue, mykernel, 2, 0, globalws, localws, 0, NULL, NULL);
-    if (err != 0)
-    {
-        qDebug() << "clEnqueueNDRangeKernel err: " << err;
-    }
-
-    uchar* outputBits = new uchar[image.sizeInBytes()]();
-    err = clEnqueueReadBuffer(myqueue, output, CL_TRUE, 0, image.sizeInBytes(), (void*)outputBits, NULL, NULL, NULL);
-    if (err != 0)
-    {
-        qDebug() << "clEnqueueReadBuffer err: " << err;
-    }
-
-    QImage newImage(outputBits, image.width(), image.height(), image.bytesPerLine(), image.format());
-    image = std::move(newImage);
-    imageLabel->setPixmap(QPixmap::fromImage(image));
-}
-
 void MainWindow::on_actionRotate90Triggered(bool)
 {
     imageTransformer->rotate90();
-    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
-    imageLabel->adjustSize();
-    scrollArea->setVisible(true);
+    drawImage();
 }
 
 void MainWindow::on_actionHighPassFilterTriggered(bool)
 {
-    ImageTransforming::details::Mask<int> highPassFilter{3, 3, {{0, -1, 0}, {-1, 4, -1}, {0, -1, 0}}};
-    imageTransformer->applyFilter(ImageTransforming::Mask{highPassFilter});
-    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
-    imageLabel->adjustSize();
+    image_transforming::details::Mask<int> highPassFilter{3, 3, {{0, -1, 0}, {-1, 4, -1}, {0, -1, 0}}};
+    imageTransformer->applyFilter(image_transforming::Mask{highPassFilter});
+    refreshImage();
 }
 
 void MainWindow::on_actionBackgroundRemovalTriggered(bool)
 {
     imageTransformer->backgroundRemoval();
-    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
-    imageLabel->adjustSize();
+    refreshImage();
+}
+
+void MainWindow::on_actionTrimTopTriggered(bool)
+{
+    if (not isTopTrimmed)
+    {
+        imageTransformer->trimTop();
+        refreshImage();
+    }
+    isTopTrimmed = true;
+    ui->actionTrimTop->setEnabled(false);
 }
 
 void MainWindow::on_actionGpuAccelerationToggled(bool toggled)
@@ -267,9 +190,9 @@ void MainWindow::on_actionGpuAccelerationToggled(bool toggled)
     if (imageTransformer and imageWrapper)
     {
         if (toggled)
-            imageTransformer = std::make_unique<ImageTransforming::GpuImageTransformer>(*imageWrapper);
+            imageTransformer = std::make_unique<image_transforming::GpuImageTransformer>(*imageWrapper);
         else
-            imageTransformer = std::make_unique<ImageTransforming::CommonImageTransformer>(*imageWrapper);
+            imageTransformer = std::make_unique<image_transforming::CommonImageTransformer>(*imageWrapper);
     }
 }
 
@@ -312,28 +235,42 @@ void MainWindow::on_mouseMoved(int x, int y)
 void MainWindow::on_sliderGainChanged(int from, int to, double lowerGain, double upperGain)
 {
     imageTransformer->gain(from, to, lowerGain, upperGain);
-    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
-    imageLabel->adjustSize();
-    scrollArea->setVisible(true);
+    drawImage();
+}
+
+void MainWindow::on_sliderRangeChanged(int from, int to)
+{
+    switch (operation)
+    {
+    case image_transforming::Operation::equalizeHist:
+        imageTransformer->equalizeHistogram(from, to);
+        refreshImage();
+        return;
+    case image_transforming::Operation::gain:
+    {
+        auto [lowerGain, upperGain] = panel->getLinearGainValues();
+        imageTransformer->gain(from, to, lowerGain, upperGain);
+        refreshImage();
+        return;
+    }
+    default:
+        return;
+    }
 }
 
 void MainWindow::on_buttonEqualizeHistClicked(int from, int to)
 {
     imageTransformer->equalizeHistogram(from, to);
-    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
-    imageLabel->adjustSize();
-    scaleImage(1.0f);
-    adjustScrollBar(scrollArea->horizontalScrollBar(), 1.0f);
-    adjustScrollBar(scrollArea->verticalScrollBar(), 1.0f);
+    refreshImage();
 }
 
 void MainWindow::on_buttonResetClicked()
 {
-    qDebug() << "reset clicked";
     imageWrapper->resetImage();
     scaleFactor = 1.0f;
-    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
-    imageLabel->adjustSize();
+    drawImage();
+    isTopTrimmed = false;
+    ui->actionTrimTop->setEnabled(true);
 }
 
 void MainWindow::on_buttonRotateClicked()
@@ -344,16 +281,26 @@ void MainWindow::on_buttonRotateClicked()
     panel->setImageHeight(imageWrapper->getImage().height());
 }
 
+void MainWindow::on_rbEqualizeHistChecked()
+{
+    operation = image_transforming::Operation::equalizeHist;
+}
+
+void MainWindow::on_rbGainChecked()
+{
+    operation = image_transforming::Operation::gain;
+}
+
 void MainWindow::connectSignals()
 {
-    //      sender                        signal                                        receiver    slot
+    //      sender                        signal                                               receiver    slot
     connect(ui->actionOpen,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionOpenTriggered(bool))                       );
     connect(ui->actionSave,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionSaveTriggered(bool))                       );
-    connect(ui->actionGrayscale,          SIGNAL(triggered(bool)),                             this,  SLOT(on_actionGrayscaleTriggered(bool))                  );
     connect(ui->actionRotate90,           SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRotate90Triggered(bool))                   );
     connect(ui->actionGainPanel,          SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGainPannelToggled(bool))                   );
     connect(ui->actionHighPassFilter,     SIGNAL(triggered(bool)),                             this,  SLOT(on_actionHighPassFilterTriggered(bool))             );
     connect(ui->actionBackgroundRemoval,  SIGNAL(triggered(bool)),                             this,  SLOT(on_actionBackgroundRemovalTriggered(bool))          );
+    connect(ui->actionTrimTop,            SIGNAL(triggered(bool)),                             this,  SLOT(on_actionTrimTopTriggered(bool))                    );
     connect(ui->actionGpuAcceleration,    SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGpuAccelerationToggled(bool))              );
     connect(imageLabel,                   SIGNAL(mouseWheelUsed(QPoint)),                      this,  SLOT(on_mouseWheelUsed(QPoint))                          );
     connect(imageLabel,                   SIGNAL(mousePressedMoved(int,int)),                  this,  SLOT(on_mousePressedMoved(int,int))                      );
@@ -362,57 +309,7 @@ void MainWindow::connectSignals()
     connect(panel,                        SIGNAL(sliderGainChanged(int, int, double, double)), this,  SLOT(on_sliderGainChanged(int, int, double, double))     );
     connect(panel,                        SIGNAL(buttonEqualizeHistClicked(int, int)),         this,  SLOT(on_buttonEqualizeHistClicked(int, int))             );
     connect(panel,                        SIGNAL(buttonResetClicked()),                        this,  SLOT(on_buttonResetClicked())                            );
+    connect(panel,                        SIGNAL(rbEqualizeHistChecked()),                     this,  SLOT(on_rbEqualizeHistChecked())                         );
+    connect(panel,                        SIGNAL(rbGainChecked()),                             this,  SLOT(on_rbGainChecked())                                 );
+    connect(panel,                        SIGNAL(sliderRangeChanged(int, int)),                this,  SLOT(on_sliderRangeChanged(int, int))                    );
 }
-
-/*void MainWindow::on_actionGrayscaleTriggered(bool)
-{
-    std::vector<cl::Platform> platforms;
-    cl::Platform::get(&platforms);
-
-    std::vector<cl::Device> devices;
-    platforms.front().getDevices(CL_DEVICE_TYPE_GPU, &devices);
-
-    cl::Context context(devices.front());
-    qDebug() << devices.front().getInfo<CL_DEVICE_NAME>().data();
-
-    QFile file("D:\\praca_magisterska\\GeoViewer\\GeoViewer\\kernels\\test.cl");
-    file.open(QFile::ReadOnly);
-    std::string fileContent = file.readAll().toStdString();
-
-    cl_int err;
-    cl::Program program(context, fileContent, CL_TRUE, &err);
-    qDebug() << "Program err: " << err;
-
-    cl::Kernel kernel(program, "rgbToGray", &err);
-    qDebug() << "Kernel err: " << err;
-
-    cl::KernelFunctor<cl_mem> kernelFunctor(kernel);
-    cl::CommandQueue commandQueue(context, devices.front());
-    cl::EnqueueArgs enqueueArgs(commandQueue, cl::NDRange(image.width(), image.height()));
-
-    cl_image_format imageFormat = {CL_sRGBA, CL_UNORM_INT8};
-    uchar* tmp = image.bits();
-    uchar* buffer = new uchar[image.width()*image.height()*4];
-    std::memcpy(buffer, tmp, image.width()*image.height()*4);
-    cl_mem srcImg = clCreateImage2D(context.get(), CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, &imageFormat, image.width(), image.height(), 0, buffer, &err);
-    qDebug() << "clCreateImage2D err: " << err;
-
-    kernelFunctor(enqueueArgs, srcImg);
-
-    print_image(image.bits());
-    //std::memcpy(buffer, srcImg, image.width()*image.height()*4);
-    print_image(buffer);
-    //QImage newImage(buffer, image.width(), image.height(), image.bytesPerLine(), image.format());
-
-    //image = std::move(newImage);
-    //print_image(newImage.bits());
-
-    if (image.isNull())
-    {
-        qDebug() << "isNull";
-        return;
-    }
-
-    imageLabel->setPixmap(QPixmap::fromImage(image));
-
-}*/

@@ -14,7 +14,7 @@
 
 class QImageWrapper;
 
-namespace ImageTransforming
+namespace image_transforming
 {
 
 class GpuImageTransformer : public ImageTransformer
@@ -29,6 +29,7 @@ public:
     void equalizeHistogram(int from, int to) override;
     void applyFilter(const Mask& mask) override;
     void backgroundRemoval() override;
+    void trimTop() override;
 
 private:
     QImageWrapper& imageWrapper;
@@ -60,4 +61,4 @@ private:
     bool checkError(cl_int error, std::optional<QString> functionName = std::nullopt);
     size_t upToMultipleOf(int multiplier, size_t value);
 };
-} // namespace ImageTransforming
+} // namespace image_transforming

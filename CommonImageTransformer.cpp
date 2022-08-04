@@ -2,8 +2,33 @@
 #include "QImageWrapper.hpp"
 #include "Mask.hpp"
 
-namespace ImageTransforming
+namespace image_transforming
 {
+namespace
+{
+GprData::DataType meanInRow(const GprData::DataType* values, int size)
+{
+    double sum = 0;
+    for (int i = 0; i < size; i++)
+    {
+        sum += static_cast<double>(values[i]);
+    }
+
+    return static_cast<GprData::DataType>(sum/size);
+}
+
+GprData::DataType findMax(const GprData::DataType* values, int size)
+{
+    GprData::DataType maxValue = 0;
+    for (int i = 0; i < size; i++)
+    {
+        if (values[i] > maxValue)
+            maxValue = values[i];
+    }
+    return maxValue;
+}
+} // namespace
+
 CommonImageTransformer::CommonImageTransformer(QImageWrapper& imageWrapper)
  : imageWrapper{imageWrapper}
 {
@@ -91,12 +116,12 @@ void CommonImageTransformer::gain(int from, int to, double gainLower, double gai
 
 void CommonImageTransformer::equalizeHistogram(int from, int to)
 {
-    const ImageData& imageData = imageWrapper.getImageData();
+    const ImageData& imageData = imageWrapper.getOriginalImageData();
 
     qDebug() << "equalizeHistogram from: " << from << ", to: " << to;
     qDebug() << "min: " << min(from, to, imageData) << ", max: " << max(from, to, imageData);
 
-    ImageData newImageData{imageWrapper.getImageData()};
+    ImageData newImageData{imageWrapper.getOriginalImageData()};
     LookupTable lut = createLut(min(from, to, imageData), max(from, to, imageData));
 
     qDebug() << "lut created";
@@ -118,7 +143,7 @@ void CommonImageTransformer::equalizeHistogram(int from, int to)
 
 void CommonImageTransformer::applyFilter(const Mask& mask)
 {
-    std::visit([this] (auto&& mask) {applyFilter(mask); }, mask);
+    std::visit([this] (const auto& mask) {applyFilter(mask); }, mask);
 }
 
 void CommonImageTransformer::backgroundRemoval()
@@ -146,6 +171,30 @@ void CommonImageTransformer::backgroundRemoval()
     }
 
     imageWrapper.setNewImage(std::move(newImageData));
+}
+
+void CommonImageTransformer::trimTop()
+{
+    const ImageData& imageData = imageWrapper.getImageData();
+
+    GprData::DataType minMean = limits::max();
+    int rowWithMinMean = 0;
+    for (int row = 0; row < imageWrapper.height(); row++)
+    {
+        GprData::DataType mean = meanInRow(imageData.getDataAt(row, 0), imageData.getWidth());
+        if (mean < minMean)
+        {
+            minMean = mean;
+            rowWithMinMean = row;
+        }
+    }
+    qDebug() << "rowWithMaxValue: " << rowWithMinMean;
+
+    ImageData newImageData{imageData};
+
+    newImageData.trimTop(rowWithMinMean);
+    imageWrapper.setNewImage(std::move(newImageData));
+    qDebug() << "trimTop width: " << imageWrapper.width() << " height: " << imageWrapper.height();
 }
 
 template <class MaskType>
@@ -190,6 +239,11 @@ void CommonImageTransformer::applyFilter(const MaskType& mask)
 LookupTable CommonImageTransformer::createLut(GprData::DataType min, GprData::DataType max)
 {
     LookupTable lut{};
+
+    if (max - min <= 0)
+    {
+        return lut;
+    }
 
     const double formula = (limits::max() - 1) / (max - min);
     for (auto i = min; i < max; i++)
@@ -244,4 +298,4 @@ GprData::DataType CommonImageTransformer::max(int from, int to, const ImageData&
 
     return max;
 }
-} // namespace ImageTransforming
+} // namespace image_transforming

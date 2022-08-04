@@ -4,7 +4,7 @@
 #include <vector>
 #include <QDebug>
 
-namespace ImageTransforming
+namespace image_transforming
 {
 namespace details
 {
@@ -36,4 +36,4 @@ struct Mask
     std::vector<T> values;
 };
 } // namespace details
-} // namespace ImageTransforming
+} // namespace image_transforming

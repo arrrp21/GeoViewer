@@ -22,7 +22,7 @@ struct GprData
     using DataType = std::uint16_t;
 
     GprData() = delete;
-    GprData(ScanDirection, double, double, std::uint32_t, std::uint32_t, std::vector<DataType>&&);
+    GprData(ScanDirection, double, double, int, int, double, std::vector<DataType>&&);
     GprData(const GprData&) = delete;
     GprData(GprData&&);
     GprData& operator=(const GprData&) = delete;

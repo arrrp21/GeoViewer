@@ -4,7 +4,7 @@
 class ImageData;
 class QImageWrapper;
 
-namespace ImageTransforming
+namespace image_transforming
 {
 class CommonImageTransformer : public ImageTransformer
 {
@@ -18,6 +18,7 @@ public:
     void equalizeHistogram(int from, int to) override;
     void applyFilter(const Mask& mask) override;
     void backgroundRemoval() override;
+    void trimTop() override;
 
 private:
     QImageWrapper& imageWrapper;
@@ -31,4 +32,4 @@ private:
     template <class MaskType>
     void applyFilter(const MaskType& mask);
 };
-} // namespace ImageTransforming
+} // namespace image_transforming

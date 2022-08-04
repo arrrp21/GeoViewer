@@ -17,25 +17,6 @@
 
 namespace open_cl_utils
 {
-
-template <typename T, typename ... Ts>
-using IsOneOf = std::disjunction<std::is_same<T, Ts>...>;
-
-template <typename In, typename Out>
-Out toClType(In in);
-
-template <>
-cl_int toClType<int>(int in)
-{
-    return static_cast<cl_uint>(in);
-}
-
-template <>
-cl_float toClType<float>(float in)
-{
-    return static_cast<cl_float>(in);
-}
-
 namespace
 {
 class Counter

@@ -25,6 +25,8 @@ Panel::Panel(QWidget *parent) :
     ui->buttonRotate->setIcon(icon);
     ui->buttonRotate->setIconSize(QSize(24, 24));
 
+    ui->groupBoxGain->setEnabled(false);
+
     connectSignals();
 }
 
@@ -32,6 +34,13 @@ void Panel::setImageHeight(int imageHeight)
 {
     this->imageHeight = imageHeight;
     setHeightConstraints();
+}
+
+std::pair<double, double> Panel::getLinearGainValues()
+{
+    return std::make_pair(
+         ui->sliderGainValueLower->value()/multiplier,
+         ui->sliderGainValueUpper->value()/multiplier);
 }
 
 void Panel::setHeightConstraints()
@@ -94,6 +103,26 @@ void Panel::connectSignals()
 
     connect(ui->buttonRotate, &QPushButton::clicked, [this] () { emit buttonRotateClicked(); });
     connect(ui->buttonReset, &QPushButton::clicked, [this] () { emit buttonResetClicked(); });
+
+    connect(ui->rbEqualizeHist, &QRadioButton::toggled, [this] (bool checked) { if (checked) { emit rbEqualizeHistChecked(); } } );
+    connect(ui->rbGain, &QRadioButton::toggled, [this] (bool checked) {
+        if (checked)
+        {
+            ui->groupBoxGain->setEnabled(true);
+            emit rbGainChecked();
+        }
+        else
+        {
+            ui->groupBoxGain->setEnabled(false);
+        }
+    });
+
+    connect(ui->sliderRangeLower, &QSlider::valueChanged, [this] (int from) {
+        emit sliderRangeChanged(from, ui->sliderRangeUpper->value());
+    });
+    connect(ui->sliderRangeUpper, &QSlider::valueChanged, [this] (int to) {
+        emit sliderRangeChanged(ui->sliderRangeLower->value(), to);
+    });
 }
 
 void Panel::connectSlidersConstraints()

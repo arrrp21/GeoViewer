@@ -99,10 +99,10 @@
   <widget class="QPushButton" name="buttonEqualizeHist">
    <property name="geometry">
     <rect>
-     <x>480</x>
-     <y>10</y>
+     <x>640</x>
+     <y>34</y>
      <width>121</width>
-     <height>28</height>
+     <height>26</height>
     </rect>
    </property>
    <property name="text">
@@ -112,10 +112,10 @@
   <widget class="QPushButton" name="buttonReset">
    <property name="geometry">
     <rect>
-     <x>620</x>
-     <y>10</y>
+     <x>640</x>
+     <y>0</y>
      <width>93</width>
-     <height>28</height>
+     <height>26</height>
     </rect>
    </property>
    <property name="text">
@@ -125,7 +125,7 @@
   <widget class="QPushButton" name="buttonRotate">
    <property name="geometry">
     <rect>
-     <x>730</x>
+     <x>750</x>
      <y>10</y>
      <width>28</width>
      <height>28</height>
@@ -206,6 +206,55 @@
     </property>
     <property name="text">
      <string>text</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="groupBoxOperation">
+   <property name="geometry">
+    <rect>
+     <x>460</x>
+     <y>0</y>
+     <width>140</width>
+     <height>60</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string>Operation</string>
+   </property>
+   <widget class="QRadioButton" name="rbEqualizeHist">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>18</y>
+      <width>120</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Equalize histogram</string>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="rbGain">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>36</y>
+      <width>120</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>8</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Linear gain</string>
     </property>
    </widget>
   </widget>

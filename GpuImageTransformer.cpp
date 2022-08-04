@@ -8,7 +8,7 @@
 #define ASSERT_NO_ERROR(err, functionName) \
     if (checkError(err, functionName) == true) return;
 
-namespace ImageTransforming
+namespace image_transforming
 {
 
 bool GpuImageTransformer::checkError(cl_int err, std::optional<QString> functionName)
@@ -151,8 +151,12 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
 
     imageWrapper.setNewImage(std::move(finalImageData));
 
-
-
+    err = clReleaseMemObject(input);
+    ASSERT_NO_ERROR(err, "clReleaseMemObject");
+    err = clReleaseMemObject(output);
+    ASSERT_NO_ERROR(err, "clReleaseMemObject");
+    err = clReleaseCommandQueue(queue);
+    ASSERT_NO_ERROR(err, "clReleaseCommandQueue");
 
 
     /*ImageData newImageData{imageWrapper.getOriginalImageData()};
@@ -184,6 +188,11 @@ void GpuImageTransformer::applyFilter(const Mask &mask)
 }
 
 void GpuImageTransformer::backgroundRemoval()
+{
+
+}
+
+void GpuImageTransformer::trimTop()
 {
 
 }
@@ -254,4 +263,4 @@ size_t GpuImageTransformer::upToMultipleOf(int multiplier, size_t value)
 
     return value + (multiplier - value % multiplier);
 }
-} // namespace ImageTransforming
+} // namespace image_transforming
