@@ -9,6 +9,7 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    CircularBuffer.cpp \
     CommonImageTransformer.cpp \
     GprData.cpp \
     GpuImageTransformer.cpp \
@@ -16,6 +17,8 @@ SOURCES += \
     ImageLabel.cpp \
     Panel.cpp \
     QImageWrapper.cpp \
+    State.cpp \
+    StateMachine.cpp \
     main.cpp \
     mainwindow.cpp \
     format.cc
@@ -26,6 +29,7 @@ INCLUDEPATH += "$$PWD/CL" \
         "$$PWD/kernels"
 
 HEADERS += \
+    CircularBuffer.hpp \
     CommonImageTransformer.hpp \
     GprData.hpp \
     GpuImageTransformer.hpp \
@@ -38,6 +42,8 @@ HEADERS += \
     Operation.hpp \
     Panel.hpp \
     QImageWrapper.hpp \
+    State.hpp \
+    StateMachine.hpp \
     Visitor.hpp \
     fmt/core.h \
     fmt/format.h \

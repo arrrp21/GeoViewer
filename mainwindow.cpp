@@ -78,6 +78,12 @@ void MainWindow::scaleImage(float factor)
     imageLabel->resize(newSize);
 }
 
+void MainWindow::setTopTrimmed(bool topTrimmed)
+{
+    isTopTrimmed = topTrimmed;
+    ui->actionTrimTop->setEnabled(not topTrimmed);
+}
+
 void MainWindow::adjustScrollBar(QScrollBar *scrollBar, float factor)
 {
     scrollBar->setValue(static_cast<int>(factor * scrollBar->value() + ((factor - 1) * scrollBar->pageStep()/2)));
@@ -126,6 +132,7 @@ void MainWindow::on_actionOpenTriggered(bool)
             imageLabel->setYStep(gprData.RANGE / 2 * gprData.PROP_VEL / gprData.N_ACQ_SAMPLE);
             drawImage();
             ui->actionGainPanel->setChecked(true);
+            setTopTrimmed(false);
             panel->setImageHeight(imageWrapper->getImage().height());
             scrollArea->setVisible(true);
             ui->actionSave->setEnabled(true);
@@ -179,9 +186,8 @@ void MainWindow::on_actionTrimTopTriggered(bool)
     {
         imageTransformer->trimTop();
         refreshImage();
+        setTopTrimmed(true);
     }
-    isTopTrimmed = true;
-    ui->actionTrimTop->setEnabled(false);
 }
 
 void MainWindow::on_actionGpuAccelerationToggled(bool toggled)
@@ -228,7 +234,7 @@ void MainWindow::on_mouseMoved(int x, int y)
 
     GprData::DataType color = imageWrapper->getColor(x, y);
     ui->statusbar->showMessage(QString::fromStdString(
-        fmt::format("x: {}  y: {}  color: {}  scale: {}  width: {}  height: {}",
+        fmt::format("x: {}  y: {}  color: {}  scale: {:.2f}  width: {}  height: {}",
                     x, y, color, scaleFactor, imageLabel->width(), imageLabel->height())));
 }
 
@@ -269,8 +275,7 @@ void MainWindow::on_buttonResetClicked()
     imageWrapper->resetImage();
     scaleFactor = 1.0f;
     drawImage();
-    isTopTrimmed = false;
-    ui->actionTrimTop->setEnabled(true);
+    setTopTrimmed(false);
 }
 
 void MainWindow::on_buttonRotateClicked()

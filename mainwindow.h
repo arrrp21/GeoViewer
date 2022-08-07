@@ -49,6 +49,7 @@ private:
     static constexpr float scaleFactorStep{0.1f};
 
     void scaleImage(float factor);
+    void setTopTrimmed(bool topTrimmed);
     void adjustScrollBar(QScrollBar* scrollBar, float factor);
     void drawImage();
     void refreshImage();
