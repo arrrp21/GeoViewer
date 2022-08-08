@@ -99,7 +99,7 @@
   <widget class="QPushButton" name="buttonEqualizeHist">
    <property name="geometry">
     <rect>
-     <x>640</x>
+     <x>720</x>
      <y>36</y>
      <width>121</width>
      <height>24</height>
@@ -112,7 +112,7 @@
   <widget class="QPushButton" name="buttonReset">
    <property name="geometry">
     <rect>
-     <x>640</x>
+     <x>720</x>
      <y>6</y>
      <width>93</width>
      <height>24</height>
@@ -125,8 +125,8 @@
   <widget class="QPushButton" name="buttonRotate">
    <property name="geometry">
     <rect>
-     <x>750</x>
-     <y>10</y>
+     <x>860</x>
+     <y>6</y>
      <width>28</width>
      <height>28</height>
     </rect>
@@ -257,6 +257,19 @@
      <string>Linear gain</string>
     </property>
    </widget>
+  </widget>
+  <widget class="QPushButton" name="buttonApply">
+   <property name="geometry">
+    <rect>
+     <x>620</x>
+     <y>6</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Apply</string>
+   </property>
   </widget>
  </widget>
  <resources/>

@@ -9,20 +9,13 @@ public:
     {
     }
 
-    void reset();
-    void add(T& value)
+    void add(T&& value)
     {
         if (not isEmpty())
         {
             m_head = (m_head + 1) % maxSize;
         }
         values[m_head] = value;
-
-        if (m_head > m_size)
-        {
-            values[0] = value;
-            m_head = 0;
-        }
 
         if (isFull())
         {
@@ -33,9 +26,20 @@ public:
             m_size++;
         }
     }
+
     T& head()
     {
         return values[m_head];
+    }
+
+    T& at(std::size_t pos)
+    {
+        if (pos >= m_size)
+        {
+            return values[m_tail];
+        }
+        std::size_t p = (m_head - pos) % maxSize;
+        return values[p];
     }
 
     T& tail()
@@ -43,15 +47,27 @@ public:
         return values[m_tail];
     }
 
-    bool isFull() const
+    void removeHead(std::size_t numOfElements = 1)
     {
-        return m_size == maxSize;
+        if (numOfElements == 0)
+        {
+            return;
+        }
+
+        if (numOfElements >= m_size)
+        {
+            m_size = 0;
+            m_head = 0;
+            m_tail = 0;
+        }
+
+        m_head = (m_head - numOfElements) % maxSize;
+        m_size -= numOfElements;
     }
 
-    bool isEmpty() const
-    {
-        return m_size == 0;
-    }
+    bool isFull() const { return m_size == maxSize; }
+    bool isEmpty() const { return m_size == 0; }
+    std::size_t size() { return m_size; }
 
 private:
     std::array<T, maxSize> values;

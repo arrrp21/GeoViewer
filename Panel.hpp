@@ -1,6 +1,8 @@
 #pragma once
 #include <QWidget>
 
+struct State;
+
 namespace Ui {
 class Panel;
 }
@@ -12,7 +14,10 @@ class Panel : public QWidget
 public:
     explicit Panel(QWidget *parent = nullptr);
     void setImageHeight(int imageHeight);
+    std::pair<int, int> getSliderRangeValues();
     std::pair<double, double> getLinearGainValues();
+    std::pair<int, int> getLinearGainSliderValues();
+    void restoreState(const State&);
     ~Panel();
 
 
@@ -38,4 +43,5 @@ signals:
     void buttonResetClicked();
     void rbEqualizeHistChecked();
     void rbGainChecked();
+    void buttonApplyClicked();
 };

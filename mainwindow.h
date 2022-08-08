@@ -4,6 +4,7 @@
 #include <QImage>
 #include <QDebug>
 #include "Operation.hpp"
+#include "State.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -14,6 +15,7 @@ class QScrollBar;
 QT_END_NAMESPACE
 
 class QImageWrapper;
+class StateMachine;
 namespace image_transforming
 {
 class ImageTransformer;
@@ -40,6 +42,7 @@ private:
     QScrollArea* scrollArea;
     QVBoxLayout* layout;
     QWidget* centralWidget;
+    std::unique_ptr<StateMachine> stateMachine;
 
     float scaleFactor{1.0f};
     bool isTopTrimmed{false};
@@ -54,11 +57,15 @@ private:
     void drawImage();
     void refreshImage();
     void connectSignals();
+    State createState();
+    void restoreState(State&);
 
 public slots:
     void on_actionGainPannelToggled(bool);
     void on_actionOpenTriggered(bool);
     void on_actionSaveTriggered(bool);
+    void on_actionUndoTriggered(bool);
+    void on_actionRedoTriggered(bool);
     void on_actionRotate90Triggered(bool);
     void on_actionHighPassFilterTriggered(bool);
     void on_actionBackgroundRemovalTriggered(bool);
@@ -76,4 +83,5 @@ public slots:
     void on_buttonRotateClicked();
     void on_rbEqualizeHistChecked();
     void on_rbGainChecked();
+    void on_buttonApplyClicked();
 };

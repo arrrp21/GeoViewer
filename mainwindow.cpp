@@ -24,6 +24,7 @@
 #include "fmt/format.h"
 #include "Panel.hpp"
 #include "Mask.hpp"
+#include "StateMachine.hpp"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -37,6 +38,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->actionOpen->setShortcut(QKeySequence::Open);
     ui->actionSave->setShortcut(QKeySequence::Save);
+    ui->actionUndo->setShortcut(QKeySequence::Undo);
+    ui->actionRedo->setShortcut(QKeySequence::Redo);
     ui->actionSave->setEnabled(false);
 
     panel->setVisible(false);
@@ -136,6 +139,9 @@ void MainWindow::on_actionOpenTriggered(bool)
             panel->setImageHeight(imageWrapper->getImage().height());
             scrollArea->setVisible(true);
             ui->actionSave->setEnabled(true);
+            stateMachine = std::make_unique<StateMachine>();
+            State state = createState();
+            stateMachine->updateState(state);
         },
         [](QString& error) {
             QMessageBox messageBox;
@@ -154,6 +160,32 @@ void MainWindow::on_actionSaveTriggered(bool)
         return;
 
     imageWrapper->getImage().save(fileName);
+}
+
+void MainWindow::on_actionUndoTriggered(bool)
+{
+    std::optional<State> state = stateMachine->previousState();
+    if (state)
+    {
+        restoreState(state.value());
+    }
+    else
+    {
+        qDebug() << "couldn't undo";
+    }
+}
+
+void MainWindow::on_actionRedoTriggered(bool)
+{
+    std::optional<State> state = stateMachine->nextState();
+    if (state)
+    {
+        restoreState(state.value());
+    }
+    else
+    {
+        qDebug() << "coun't redo";
+    }
 }
 
 void MainWindow::on_actionGainPannelToggled(bool checked)
@@ -296,11 +328,44 @@ void MainWindow::on_rbGainChecked()
     operation = image_transforming::Operation::gain;
 }
 
+void MainWindow::on_buttonApplyClicked()
+{
+    if (operation == image_transforming::Operation::gain)
+    {
+        State state = createState();
+        imageWrapper->changeOriginalImageData(imageWrapper->getImageData());
+        stateMachine->updateState(state);
+    }
+}
+
+State MainWindow::createState()
+{
+    auto [sliderRangeLowerValue, sliderRangeUpperValue] = panel->getSliderRangeValues();
+    auto [sliderGainLowerValue, sliderGainUpperValue] = panel->getLinearGainSliderValues();
+
+    return State{sliderRangeLowerValue,
+        sliderRangeUpperValue,
+        sliderGainLowerValue,
+        sliderGainUpperValue,
+        isTopTrimmed,
+        imageWrapper->getImageData(),
+                operation};
+}
+
+void MainWindow::restoreState(State& state)
+{
+    panel->restoreState(state);
+    imageWrapper->setNewImage(std::move(state.imageData));
+    refreshImage();
+}
+
 void MainWindow::connectSignals()
 {
     //      sender                        signal                                               receiver    slot
     connect(ui->actionOpen,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionOpenTriggered(bool))                       );
     connect(ui->actionSave,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionSaveTriggered(bool))                       );
+    connect(ui->actionUndo,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionUndoTriggered(bool))                       );
+    connect(ui->actionRedo,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRedoTriggered(bool))                       );
     connect(ui->actionRotate90,           SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRotate90Triggered(bool))                   );
     connect(ui->actionGainPanel,          SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGainPannelToggled(bool))                   );
     connect(ui->actionHighPassFilter,     SIGNAL(triggered(bool)),                             this,  SLOT(on_actionHighPassFilterTriggered(bool))             );
@@ -317,4 +382,6 @@ void MainWindow::connectSignals()
     connect(panel,                        SIGNAL(rbEqualizeHistChecked()),                     this,  SLOT(on_rbEqualizeHistChecked())                         );
     connect(panel,                        SIGNAL(rbGainChecked()),                             this,  SLOT(on_rbGainChecked())                                 );
     connect(panel,                        SIGNAL(sliderRangeChanged(int, int)),                this,  SLOT(on_sliderRangeChanged(int, int))                    );
+    connect(panel,                        SIGNAL(buttonApplyClicked()),                        this,  SLOT(on_buttonApplyClicked())                            );
 }
+

@@ -2,12 +2,8 @@
 #include "ImageData.hpp"
 #include "Operation.hpp"
 
-class State
+struct State
 {
-public:
-    State();
-
-private:
     int sliderRangeLowerValue;
     int sliderRangeUpperValue;
     int sliderGainLowerValue;

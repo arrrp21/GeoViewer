@@ -1,8 +1,10 @@
 #include "Panel.hpp"
 #include "ui_Panel.h"
+#include "State.hpp"
 
 #include <QIntValidator>
 #include <QDoubleValidator>
+#include <QSignalBlocker>
 
 Panel::Panel(QWidget *parent) :
     QWidget(parent),
@@ -36,11 +38,30 @@ void Panel::setImageHeight(int imageHeight)
     setHeightConstraints();
 }
 
+std::pair<int, int> Panel::getSliderRangeValues()
+{
+    return std::make_pair(ui->sliderRangeLower->value(), ui->sliderRangeUpper->value());
+}
+
 std::pair<double, double> Panel::getLinearGainValues()
 {
     return std::make_pair(
-         ui->sliderGainValueLower->value()/multiplier,
-         ui->sliderGainValueUpper->value()/multiplier);
+        ui->sliderGainValueLower->value()/multiplier,
+        ui->sliderGainValueUpper->value()/multiplier);
+}
+
+std::pair<int, int> Panel::getLinearGainSliderValues()
+{
+    return std::make_pair(ui->sliderGainValueLower->value(), ui->sliderGainValueUpper->value());
+}
+
+void Panel::restoreState(const State& state)
+{
+    QSignalBlocker blocker(this);
+    ui->sliderRangeLower->setValue(state.sliderRangeLowerValue);
+    ui->sliderRangeUpper->setValue(state.sliderRangeUpperValue);
+    ui->sliderGainValueLower->setValue(state.sliderGainLowerValue);
+    ui->sliderGainValueUpper->setValue(state.sliderGainUpperValue);
 }
 
 void Panel::setHeightConstraints()
@@ -123,6 +144,8 @@ void Panel::connectSignals()
     connect(ui->sliderRangeUpper, &QSlider::valueChanged, [this] (int to) {
         emit sliderRangeChanged(ui->sliderRangeLower->value(), to);
     });
+
+    connect(ui->buttonApply, &QPushButton::clicked, [this]() { emit buttonApplyClicked(); });
 }
 
 void Panel::connectSlidersConstraints()

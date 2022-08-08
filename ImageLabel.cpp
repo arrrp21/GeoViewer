@@ -46,8 +46,6 @@ void ImageLabel::wheelEvent(QWheelEvent* event)
 
 void ImageLabel::paintEvent(QPaintEvent* event)
 {
-    qDebug() << "ImageLabel width: " << width() << " height: " << height();
-
     QLabel::paintEvent(event);
     QPainter painter(this);
     painter.setPen(Qt::blue);
