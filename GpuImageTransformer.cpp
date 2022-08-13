@@ -87,8 +87,8 @@ void GpuImageTransformer::rotate90()
     GprData::DataType* newRawData = newData.getData();
     err = clEnqueueReadBuffer(queue, output, CL_TRUE, 0, sizeInBytes, (void*)newRawData, NULL, NULL, NULL);
 
-    imageWrapper.changeOriginalImageData(newData);
     imageWrapper.setNewImage(std::move(newData));
+    imageWrapper.updatePreviousImage();
 
     qDebug() << "rotate90 on GPU done";
 }

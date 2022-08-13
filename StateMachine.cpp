@@ -5,6 +5,11 @@ StateMachine::StateMachine()
 
 }
 
+void StateMachine::updateState(State&& state)
+{
+    states.add(std::forward<State>(state));
+}
+
 void StateMachine::updateState(State& state)
 {
     states.add(std::forward<State>(state));
@@ -26,4 +31,9 @@ std::optional<State> StateMachine::nextState()
         return states.at(--currentState);
     }
     return std::nullopt;
+}
+
+State StateMachine::latestState()
+{
+    return states.at(currentState);
 }

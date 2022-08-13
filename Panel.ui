@@ -113,7 +113,7 @@
    <property name="geometry">
     <rect>
      <x>720</x>
-     <y>6</y>
+     <y>8</y>
      <width>93</width>
      <height>24</height>
     </rect>
@@ -262,13 +262,26 @@
    <property name="geometry">
     <rect>
      <x>620</x>
-     <y>6</y>
-     <width>75</width>
-     <height>23</height>
+     <y>8</y>
+     <width>60</width>
+     <height>24</height>
     </rect>
    </property>
    <property name="text">
     <string>Apply</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="buttonCancel">
+   <property name="geometry">
+    <rect>
+     <x>620</x>
+     <y>36</y>
+     <width>60</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Cancel</string>
    </property>
   </widget>
  </widget>

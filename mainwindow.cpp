@@ -11,6 +11,7 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QPainter>
+#include "Log.hpp"
 
 #include <ios>
 #include <cmath>
@@ -40,9 +41,9 @@ MainWindow::MainWindow(QWidget *parent)
     ui->actionSave->setShortcut(QKeySequence::Save);
     ui->actionUndo->setShortcut(QKeySequence::Undo);
     ui->actionRedo->setShortcut(QKeySequence::Redo);
-    ui->actionSave->setEnabled(false);
+    ui->actionClose->setShortcut(QKeySequence::Close);
 
-    panel->setVisible(false);
+    panel->hide();
 
     imageLabel->setBackgroundRole(QPalette::Base);
     imageLabel->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
@@ -50,7 +51,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     scrollArea->setBackgroundRole(QPalette::Dark);
     scrollArea->setWidget(imageLabel);
-    scrollArea->setVisible(false);
+    scrollArea->hide();
 
     layout->addWidget(panel);
     layout->addWidget(scrollArea);
@@ -65,6 +66,44 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::enableMenuActions()
+{
+    toggleMenuActions(true);
+}
+
+void MainWindow::disableMenuActions()
+{
+    toggleMenuActions(false);
+}
+
+void MainWindow::toggleMenuActions(bool isEnabled)
+{
+    ui->actionSave->setEnabled(isEnabled);
+    ui->actionClose->setEnabled(isEnabled);
+    ui->menuEdit->setEnabled(isEnabled);
+    ui->menuTools->setEnabled(isEnabled);
+}
+
+void MainWindow::saveImage()
+{
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Choose file"), "./", tr("Images (*.jpg *.png *.bmp)"));
+    qDebug() << fileName;
+
+    if (fileName.isNull())
+        return;
+
+    imageWrapper->getImage().save(fileName);
+}
+
+void MainWindow::closeImage()
+{
+    disableMenuActions();
+    imageLabel->clearImage();
+    stateMachine.reset();
+    panel->hide();
+    scrollArea->hide();
 }
 
 void MainWindow::scaleImage(float factor)
@@ -92,10 +131,17 @@ void MainWindow::adjustScrollBar(QScrollBar *scrollBar, float factor)
     scrollBar->setValue(static_cast<int>(factor * scrollBar->value() + ((factor - 1) * scrollBar->pageStep()/2)));
 }
 
-void MainWindow::drawImage()
+void MainWindow::rotate90()
 {
+    imageTransformer->rotate90();
     imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
     imageLabel->adjustSize();
+    panel->setImageHeight(imageWrapper->height());
+}
+
+void MainWindow::drawImage()
+{
+    imageLabel->showImage(imageWrapper->getImage());
 }
 
 void MainWindow::refreshImage()
@@ -112,14 +158,14 @@ void MainWindow::on_actionOpenTriggered(bool)
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Choose file"), "./", tr("Profiles (*.asc);;Images (*.jpg *.png *.bmp)"));
 
-    qDebug() << fileName;
+    LOG_INFO("fileName: {}", fileName.toStdString());
 
     if (fileName.isNull())
         return;
 
     QFile file(fileName);
 
-    std::variant<GprData, QString> maybeGprData = tryCreateGprData(file);
+    std::variant<GprData, std::string> maybeGprData = tryCreateGprData(file);
 
     std::visit(Visitor{
          [this](GprData& gprData) {
@@ -130,22 +176,27 @@ void MainWindow::on_actionOpenTriggered(bool)
             else
                 imageTransformer = std::make_unique<image_transforming::CommonImageTransformer>(*imageWrapper);
             if (gprData.SCAN_DIRECTION == ScanDirection::L)
+            {
                 imageTransformer->rotate90();
+                imageWrapper->updatePreviousImage();
+                imageWrapper->updateOriginalImage();
+            }
             imageLabel->setXStep(gprData.X_STEP);
             imageLabel->setYStep(gprData.RANGE / 2 * gprData.PROP_VEL / gprData.N_ACQ_SAMPLE);
             drawImage();
             ui->actionGainPanel->setChecked(true);
             setTopTrimmed(false);
-            panel->setImageHeight(imageWrapper->getImage().height());
-            scrollArea->setVisible(true);
-            ui->actionSave->setEnabled(true);
+            panel->setImageHeight(imageWrapper->height());
+            panel->show();
+            scrollArea->show();
+            enableMenuActions();
             stateMachine = std::make_unique<StateMachine>();
             State state = createState();
             stateMachine->updateState(state);
         },
-        [](QString& error) {
+        [](std::string& error) {
             QMessageBox messageBox;
-            messageBox.setText(error);
+            messageBox.setText(QString::fromStdString(error));
             messageBox.exec();
         }},
         maybeGprData);
@@ -153,13 +204,28 @@ void MainWindow::on_actionOpenTriggered(bool)
 
 void MainWindow::on_actionSaveTriggered(bool)
 {
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Choose file"), "./", tr("Images (*.jpg *.png *.bmp)"));
-    qDebug() << fileName;
+    saveImage();
+}
 
-    if (fileName.isNull())
-        return;
+void MainWindow::on_actionCloseTriggered(bool)
+{
+    QMessageBox::StandardButton result;
+    result = QMessageBox::question(
+                this,
+                "GeoViewer",
+                "Do you want to save your image before closing?",
+                QMessageBox::Yes | QMessageBox::No);
 
-    imageWrapper->getImage().save(fileName);
+    if (result == QMessageBox::Yes)
+    {
+        saveImage();
+    }
+    closeImage();
+}
+
+void MainWindow::on_actionExitTriggered(bool)
+{
+
 }
 
 void MainWindow::on_actionUndoTriggered(bool)
@@ -171,7 +237,7 @@ void MainWindow::on_actionUndoTriggered(bool)
     }
     else
     {
-        qDebug() << "couldn't undo";
+        LOG_INFO("couldn't undo");
     }
 }
 
@@ -184,7 +250,7 @@ void MainWindow::on_actionRedoTriggered(bool)
     }
     else
     {
-        qDebug() << "coun't redo";
+        LOG_INFO("couldn't redo");
     }
 }
 
@@ -195,8 +261,7 @@ void MainWindow::on_actionGainPannelToggled(bool checked)
 
 void MainWindow::on_actionRotate90Triggered(bool)
 {
-    imageTransformer->rotate90();
-    drawImage();
+    rotate90();
 }
 
 void MainWindow::on_actionHighPassFilterTriggered(bool)
@@ -204,12 +269,14 @@ void MainWindow::on_actionHighPassFilterTriggered(bool)
     image_transforming::details::Mask<int> highPassFilter{3, 3, {{0, -1, 0}, {-1, 4, -1}, {0, -1, 0}}};
     imageTransformer->applyFilter(image_transforming::Mask{highPassFilter});
     refreshImage();
+    updateState();
 }
 
 void MainWindow::on_actionBackgroundRemovalTriggered(bool)
 {
     imageTransformer->backgroundRemoval();
     refreshImage();
+    updateState();
 }
 
 void MainWindow::on_actionTrimTopTriggered(bool)
@@ -217,14 +284,16 @@ void MainWindow::on_actionTrimTopTriggered(bool)
     if (not isTopTrimmed)
     {
         imageTransformer->trimTop();
+        panel->setImageHeight(imageWrapper->height());
         refreshImage();
         setTopTrimmed(true);
+        updateState();
     }
 }
 
 void MainWindow::on_actionGpuAccelerationToggled(bool toggled)
 {
-    qDebug() << "on_actionGpuAccelerationToggled";
+    LOG_INFO("on_actionGpuAccelerationToggled");
     if (imageTransformer and imageWrapper)
     {
         if (toggled)
@@ -305,37 +374,48 @@ void MainWindow::on_buttonEqualizeHistClicked(int from, int to)
 void MainWindow::on_buttonResetClicked()
 {
     imageWrapper->resetImage();
+    panel->setImageHeight(imageWrapper->height());
     scaleFactor = 1.0f;
     drawImage();
     setTopTrimmed(false);
+    updateState();
 }
 
 void MainWindow::on_buttonRotateClicked()
 {
-    imageTransformer->rotate90();
-    imageLabel->setPixmap(QPixmap::fromImage(imageWrapper->getImage()));
-    imageLabel->adjustSize();
-    panel->setImageHeight(imageWrapper->getImage().height());
+    rotate90();
+    updateState();
 }
 
 void MainWindow::on_rbEqualizeHistChecked()
 {
     operation = image_transforming::Operation::equalizeHist;
+    auto [from, to] = panel->getSliderRangeValues();
+    imageTransformer->equalizeHistogram(from, to);
+    refreshImage();
 }
 
 void MainWindow::on_rbGainChecked()
 {
     operation = image_transforming::Operation::gain;
+    auto [from, to] = panel->getSliderRangeValues();
+    auto [gainLower, gainUpper] = panel->getLinearGainValues();
+    imageTransformer->gain(from, to, gainLower, gainUpper);
+    refreshImage();
 }
 
 void MainWindow::on_buttonApplyClicked()
 {
-    if (operation == image_transforming::Operation::gain)
-    {
-        State state = createState();
-        imageWrapper->changeOriginalImageData(imageWrapper->getImageData());
-        stateMachine->updateState(state);
-    }
+    updateState();
+    resetOperation();
+}
+
+void MainWindow::on_buttonCancelClicked()
+{
+    LOG_INFO("button cancel clicked");
+    State state = stateMachine->latestState();
+    restoreState(state);
+    resetOperation();
 }
 
 State MainWindow::createState()
@@ -349,14 +429,29 @@ State MainWindow::createState()
         sliderGainUpperValue,
         isTopTrimmed,
         imageWrapper->getImageData(),
-                operation};
+        operation};
+}
+
+void MainWindow::updateState()
+{
+    State state = createState();
+    stateMachine->updateState(state);
+    imageWrapper->updatePreviousImage();
 }
 
 void MainWindow::restoreState(State& state)
 {
     panel->restoreState(state);
+    setTopTrimmed(state.isTopTrimmed);
     imageWrapper->setNewImage(std::move(state.imageData));
+    panel->setImageHeight(imageWrapper->height());
     refreshImage();
+}
+
+void MainWindow::resetOperation()
+{
+    panel->uncheckRadioButton();
+    operation = image_transforming::Operation::none;
 }
 
 void MainWindow::connectSignals()
@@ -364,6 +459,8 @@ void MainWindow::connectSignals()
     //      sender                        signal                                               receiver    slot
     connect(ui->actionOpen,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionOpenTriggered(bool))                       );
     connect(ui->actionSave,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionSaveTriggered(bool))                       );
+    connect(ui->actionClose,              SIGNAL(triggered(bool)),                             this,  SLOT(on_actionCloseTriggered(bool))                      );
+    connect(ui->actionExit,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionExitTriggered(bool))                       );
     connect(ui->actionUndo,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionUndoTriggered(bool))                       );
     connect(ui->actionRedo,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRedoTriggered(bool))                       );
     connect(ui->actionRotate90,           SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRotate90Triggered(bool))                   );
@@ -383,5 +480,6 @@ void MainWindow::connectSignals()
     connect(panel,                        SIGNAL(rbGainChecked()),                             this,  SLOT(on_rbGainChecked())                                 );
     connect(panel,                        SIGNAL(sliderRangeChanged(int, int)),                this,  SLOT(on_sliderRangeChanged(int, int))                    );
     connect(panel,                        SIGNAL(buttonApplyClicked()),                        this,  SLOT(on_buttonApplyClicked())                            );
+    connect(panel,                        SIGNAL(buttonCancelClicked()),                       this,  SLOT(on_buttonCancelClicked())                           );
 }
 

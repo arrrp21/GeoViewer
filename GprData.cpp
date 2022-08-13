@@ -3,6 +3,7 @@
 #include <QTextStream>
 #include <QDebug>
 #include "fmt/format.h"
+#include "Log.hpp"
 
 class QTextStreamWrapper : public QTextStream
 {
@@ -19,7 +20,7 @@ private:
     std::uint32_t lineCount{0u};
 };
 
-std::optional<QString> readData(
+std::optional<std::string> readData(
     QTextStreamWrapper& inputTextStream,
     std::uint32_t N_ACQ_SAMPLE,
     std::uint32_t N_ACQ_SWEEP,
@@ -35,7 +36,7 @@ std::optional<QString> readData(
         GprData::DataType value{static_cast<GprData::DataType>(strValue.toInt(&isOk) + std::numeric_limits<std::int16_t>::max())};
         if (not isOk)
         {
-            return QString::fromStdString(fmt::format("Invalid DATA value (line: {})", inputTextStream.getLineCount()));
+            return fmt::format("Invalid DATA value (line: {})", inputTextStream.getLineCount());
         }
         data.push_back(value);
     }
@@ -43,7 +44,7 @@ std::optional<QString> readData(
     return std::nullopt;
 }
 
-std::variant<GprData, QString> tryCreateGprData(QFile& file)
+std::variant<GprData, std::string> tryCreateGprData(QFile& file)
 {
     if (not file.open(QIODevice::ReadOnly | QIODevice::Text))
     {
@@ -79,7 +80,7 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
             if (not isOk)
             {
                 file.close();
-                return QString("Invalid RANGE value (line: %1)").arg(inputTextStream.getLineCount());
+                return fmt::format("Invalid RANGE value (line: {})", inputTextStream.getLineCount());
             }
         }
 
@@ -90,7 +91,7 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
             if (not isOk)
             {
                 file.close();
-                return QString("Invalid PROP_VEL value (line: %1)").arg(inputTextStream.getLineCount());
+                return fmt::format("Invalid PROP_VEL value (line: {})", inputTextStream.getLineCount());
             }
         }
 
@@ -101,7 +102,7 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
             if (not isOk)
             {
                 file.close();
-                return QString("Invalid N_ACQ_SAMPLE value (line: %1)").arg(inputTextStream.getLineCount());
+                return fmt::format("Invalid N_ACQ_SAMPLE value (line: {})", inputTextStream.getLineCount());
             }
         }
 
@@ -112,27 +113,24 @@ std::variant<GprData, QString> tryCreateGprData(QFile& file)
             if (not isOk)
             {
                 file.close();
-                return QString("Invalid N_ACQ_SWEEP value (line: %1)").arg(inputTextStream.getLineCount());
+                return fmt::format("Invalid N_ACQ_SWEEP value (line: {})", inputTextStream.getLineCount());
             }
         }
 
         if (parameterName == "X_STEP")
         {
             QString xStep{inputTextStream.readLine()};
-            qDebug() << xStep;
             X_STEP = xStep.toDouble(&isOk);
-            qDebug() << X_STEP;
-            qDebug() << isOk;
             if (not isOk)
             {
                 file.close();
-                return QString("Invalid X_STEP value (line: %1)").arg(inputTextStream.getLineCount());
+                return fmt::format("Invalid X_STEP value (line: {})", inputTextStream.getLineCount());
             }
         }
 
         if (parameterName == "DATA")
         {
-            std::optional<QString> errorString = readData(inputTextStream, N_ACQ_SAMPLE, N_ACQ_SWEEP, data);
+            std::optional<std::string> errorString = readData(inputTextStream, N_ACQ_SAMPLE, N_ACQ_SWEEP, data);
             if (errorString)
             {
                 file.close();
@@ -191,5 +189,13 @@ QDebug operator<<(QDebug debug, const GprData& gprData)
           << "N_ACQ_SWEEP" << gprData.N_ACQ_SWEEP << "X_STEP: " << gprData.X_STEP << "DATA length: " <<gprData.data.size();
 
     return debug;
+}
+
+std::ostream& operator<<(std::ostream& os, const GprData& gprData)
+{
+    os << "RANGE: " << gprData.RANGE << " PROP_VEL: " << gprData.PROP_VEL << "N_ACQ_SAMPLE: " << gprData.N_ACQ_SAMPLE
+       << "N_ACQ_SWEEP" << gprData.N_ACQ_SWEEP << "X_STEP: " << gprData.X_STEP << "DATA length: " <<gprData.data.size();
+
+    return os;
 }
 

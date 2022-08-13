@@ -34,6 +34,7 @@ HEADERS += \
     ImageData.hpp \
     ImageLabel.hpp \
     ImageTransformer.hpp \
+    Log.hpp \
     Mask.hpp \
     OpenCLErrors.hpp \
     OpenCLUtils.hpp \

@@ -51,19 +51,29 @@ private:
     static constexpr float minScaleFactor{0.25f};
     static constexpr float scaleFactorStep{0.1f};
 
+    void enableMenuActions();
+    void disableMenuActions();
+    void toggleMenuActions(bool isEnabled);
+    void saveImage();
+    void closeImage();
     void scaleImage(float factor);
     void setTopTrimmed(bool topTrimmed);
     void adjustScrollBar(QScrollBar* scrollBar, float factor);
+    void rotate90();
     void drawImage();
     void refreshImage();
     void connectSignals();
     State createState();
+    void updateState();
     void restoreState(State&);
+    void resetOperation();
 
 public slots:
     void on_actionGainPannelToggled(bool);
     void on_actionOpenTriggered(bool);
     void on_actionSaveTriggered(bool);
+    void on_actionCloseTriggered(bool);
+    void on_actionExitTriggered(bool);
     void on_actionUndoTriggered(bool);
     void on_actionRedoTriggered(bool);
     void on_actionRotate90Triggered(bool);
@@ -84,4 +94,5 @@ public slots:
     void on_rbEqualizeHistChecked();
     void on_rbGainChecked();
     void on_buttonApplyClicked();
+    void on_buttonCancelClicked();
 };

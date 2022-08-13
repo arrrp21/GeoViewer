@@ -16,6 +16,8 @@ public:
     void paintEvent(QPaintEvent*) override;
     void setXStep(double xStep);
     void setYStep(double yStep);
+    void showImage(const QImage&);
+    void clearImage();
     static constexpr int leftAxisWidth = 40;
     static constexpr int bottomAxisHeight = 30;
 
@@ -25,7 +27,7 @@ private:
     void drawYAxis(QPainter&);
     void drawUnit(QPainter&);
     QPoint currentCursorPosition;
-    bool isMousePressed;
+    bool isMousePressed{false};
     float& scaleFactor;
     std::optional<double> xStep{std::nullopt};
     std::optional<double> yStep{std::nullopt};

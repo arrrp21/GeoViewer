@@ -3,6 +3,10 @@
 
 struct State;
 
+QT_BEGIN_NAMESPACE
+class QRadioButton;
+QT_END_NAMESPACE
+
 namespace Ui {
 class Panel;
 }
@@ -18,6 +22,8 @@ public:
     std::pair<double, double> getLinearGainValues();
     std::pair<int, int> getLinearGainSliderValues();
     void restoreState(const State&);
+    void uncheckRadioButton();
+    QRadioButton* findCheckedRadioButton();
     ~Panel();
 
 
@@ -44,4 +50,5 @@ signals:
     void rbEqualizeHistChecked();
     void rbGainChecked();
     void buttonApplyClicked();
+    void buttonCancelClicked();
 };

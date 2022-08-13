@@ -7,9 +7,11 @@ class StateMachine
 {
 public:
     StateMachine();
+    void updateState(State&&);
     void updateState(State&);
     std::optional<State> previousState();
     std::optional<State> nextState();
+    State latestState();
 
 private:
     CircularBuffer<State> states;

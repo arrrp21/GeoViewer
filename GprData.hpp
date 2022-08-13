@@ -9,7 +9,7 @@
 #include <QDebug>
 
 struct GprData;
-std::variant<GprData, QString> tryCreateGprData(QFile&);
+std::variant<GprData, std::string> tryCreateGprData(QFile&);
 
 enum class ScanDirection : std::uint8_t
 {
@@ -39,3 +39,4 @@ struct GprData
 };
 
 QDebug operator<<(QDebug debug, const GprData&);
+std::ostream& operator<<(std::ostream& os, const GprData&);

@@ -4,6 +4,7 @@
 QImageWrapper::QImageWrapper(GprData& gprData)
     : imageData{gprData.data, gprData.N_ACQ_SAMPLE, gprData.N_ACQ_SWEEP}
     , originalImageData{imageData}
+    , previousImageData(imageData)
 {
     image = QImage(
         imageData.getByteData(),
@@ -13,7 +14,7 @@ QImageWrapper::QImageWrapper(GprData& gprData)
         QImage::Format_Grayscale16);
 }
 
-GprData::DataType QImageWrapper::getColor(int x, int y)
+GprData::DataType QImageWrapper::getColor(int x, int y) const
 {
     if (x >= width() or y >= height())
     {
@@ -28,11 +29,17 @@ int QImageWrapper::width() const { return image.width(); }
 
 const QImage& QImageWrapper::getImage() const { return image; }
 const ImageData& QImageWrapper::getImageData() const { return imageData; }
+const ImageData& QImageWrapper::getPreviousImageData() const { return previousImageData; }
 const ImageData& QImageWrapper::getOriginalImageData() const { return originalImageData; }
 
-void QImageWrapper::changeOriginalImageData(const ImageData& newOriginalImageData)
+void QImageWrapper::updateOriginalImage()
 {
-    originalImageData = newOriginalImageData;
+    originalImageData = imageData;
+}
+
+void QImageWrapper::updatePreviousImage()
+{
+    previousImageData = imageData;
 }
 
 void QImageWrapper::setNewImage(ImageData&& newImageData)

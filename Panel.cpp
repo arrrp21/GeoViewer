@@ -5,6 +5,7 @@
 #include <QIntValidator>
 #include <QDoubleValidator>
 #include <QSignalBlocker>
+#include <QRadioButton>
 
 Panel::Panel(QWidget *parent) :
     QWidget(parent),
@@ -34,6 +35,7 @@ Panel::Panel(QWidget *parent) :
 
 void Panel::setImageHeight(int imageHeight)
 {
+    QSignalBlocker blocker(this);
     this->imageHeight = imageHeight;
     setHeightConstraints();
 }
@@ -62,6 +64,28 @@ void Panel::restoreState(const State& state)
     ui->sliderRangeUpper->setValue(state.sliderRangeUpperValue);
     ui->sliderGainValueLower->setValue(state.sliderGainLowerValue);
     ui->sliderGainValueUpper->setValue(state.sliderGainUpperValue);
+}
+
+void Panel::uncheckRadioButton()
+{
+    QSignalBlocker blocker(this);
+    QRadioButton* checkedRadioButton = findCheckedRadioButton();
+    if (checkedRadioButton != nullptr)
+    {
+        checkedRadioButton->setAutoExclusive(false);
+        checkedRadioButton->setChecked(false);
+        checkedRadioButton->setAutoExclusive(true);
+    }
+}
+
+QRadioButton* Panel::findCheckedRadioButton()
+{
+    if (ui->rbEqualizeHist->isChecked())
+        return ui->rbEqualizeHist;
+    if (ui->rbGain->isChecked())
+        return ui->rbGain;
+
+    return nullptr;
 }
 
 void Panel::setHeightConstraints()
@@ -146,6 +170,7 @@ void Panel::connectSignals()
     });
 
     connect(ui->buttonApply, &QPushButton::clicked, [this]() { emit buttonApplyClicked(); });
+    connect(ui->buttonCancel, &QPushButton::clicked, [this]() { emit buttonCancelClicked(); });
 }
 
 void Panel::connectSlidersConstraints()

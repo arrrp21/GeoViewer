@@ -46,12 +46,15 @@ void ImageLabel::wheelEvent(QWheelEvent* event)
 
 void ImageLabel::paintEvent(QPaintEvent* event)
 {
-    QLabel::paintEvent(event);
-    QPainter painter(this);
-    painter.setPen(Qt::blue);
-    painter.setFont(QFont("Arial", 10));
+    if (xStep.has_value() and yStep.has_value())
+    {
+        QLabel::paintEvent(event);
+        QPainter painter(this);
+        painter.setPen(Qt::blue);
+        painter.setFont(QFont("Arial", 10));
 
-    drawAxes(painter);
+        drawAxes(painter);
+    }
 }
 
 void ImageLabel::drawAxes(QPainter& painter)
@@ -65,22 +68,19 @@ void ImageLabel::drawXAxis(QPainter& painter)
 {
     painter.fillRect(leftAxisWidth, height() - bottomAxisHeight, width() - leftAxisWidth, bottomAxisHeight, QColorConstants::Gray);
 
-    if (xStep.has_value())
+    double axisPixelsStep = xAxisStep / xStep.value() * scaleFactor;
+    double xPos = axisPixelsStep + leftAxisWidth;
+    int yBegin = height() - bottomAxisHeight;
+    int yEnd = yBegin + bottomAxisHeight / 3;
+    double axisValue = xAxisStep;
+    while (xPos < width())
     {
-        double axisPixelsStep = xAxisStep / xStep.value() * scaleFactor;
-        double xPos = axisPixelsStep + leftAxisWidth;
-        int yBegin = height() - bottomAxisHeight;
-        int yEnd = yBegin + bottomAxisHeight / 3;
-        double axisValue = xAxisStep;
-        while (xPos < width())
-        {
-            painter.drawLine(qRound(xPos), yBegin, qRound(xPos), yEnd);
-            const QRect boundingRect(qRound(xPos) - qRound(axisPixelsStep)/2, yEnd, qRound(axisPixelsStep), height() - yEnd);
-            painter.drawText(boundingRect, Qt::AlignCenter, QString::number(axisValue));
+        painter.drawLine(qRound(xPos), yBegin, qRound(xPos), yEnd);
+        const QRect boundingRect(qRound(xPos) - qRound(axisPixelsStep)/2, yEnd, qRound(axisPixelsStep), height() - yEnd);
+        painter.drawText(boundingRect, Qt::AlignCenter, QString::number(axisValue));
 
-            xPos += axisPixelsStep;
-            axisValue += xAxisStep;
-        }
+        xPos += axisPixelsStep;
+        axisValue += xAxisStep;
     }
 }
 
@@ -88,22 +88,19 @@ void ImageLabel::drawYAxis(QPainter& painter)
 {
     painter.fillRect(0, 0, leftAxisWidth, height(), QColorConstants::Gray);
 
-    if (yStep.has_value())
+    double axisPixelsStep = yAxisStep / yStep.value() * scaleFactor;
+    double yPos = axisPixelsStep;
+    int xBegin = leftAxisWidth * 2 / 3;
+    int xEnd = leftAxisWidth;
+    double axisValue = yAxisStep;
+    while (yPos < (height() - bottomAxisHeight))
     {
-        double axisPixelsStep = yAxisStep / yStep.value() * scaleFactor;
-        double yPos = axisPixelsStep;
-        int xBegin = leftAxisWidth * 2 / 3;
-        int xEnd = leftAxisWidth;
-        double axisValue = yAxisStep;
-        while (yPos < (height() - bottomAxisHeight))
-        {
-            painter.drawLine(xBegin, qRound(yPos), xEnd, qRound(yPos));
-            const QRect boundingRect(0, qRound(yPos) - qRound(axisPixelsStep)/2, xEnd, qRound(axisPixelsStep));
-            painter.drawText(boundingRect, Qt::AlignCenter, QString::number(axisValue));
+        painter.drawLine(xBegin, qRound(yPos), xEnd, qRound(yPos));
+        const QRect boundingRect(0, qRound(yPos) - qRound(axisPixelsStep)/2, xEnd, qRound(axisPixelsStep));
+        painter.drawText(boundingRect, Qt::AlignCenter, QString::number(axisValue));
 
-            yPos += axisPixelsStep;
-            axisValue += yAxisStep;
-        }
+        yPos += axisPixelsStep;
+        axisValue += yAxisStep;
     }
 }
 
@@ -124,4 +121,20 @@ void ImageLabel::setXStep(double xStep)
 void ImageLabel::setYStep(double yStep)
 {
     this->yStep = yStep;
+}
+
+void ImageLabel::showImage(const QImage& image)
+{
+    QSignalBlocker blocker(this);
+    setPixmap(QPixmap::fromImage(image));
+    adjustSize();
+    show();
+}
+
+void ImageLabel::clearImage()
+{
+    this->xStep = std::nullopt;
+    this->yStep = std::nullopt;
+    setPixmap(QPixmap());
+    setVisible(false);
 }

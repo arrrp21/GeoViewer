@@ -151,6 +151,12 @@ GprData::DataType& ImageData::operator[](int index)
 
 void ImageData::trimTop(int row)
 {
+    if (row >= height)
+    {
+        qDebug() << "ERROR! Cannot trim top, found row: " << row << "is higher than height: " << height;
+        return;
+    }
+
     std::size_t newSize = width * (height - row - 1);
 
     GprData::DataType* newData = new GprData::DataType[newSize];
