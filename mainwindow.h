@@ -54,6 +54,7 @@ private:
     void enableMenuActions();
     void disableMenuActions();
     void toggleMenuActions(bool isEnabled);
+    void askForSaveImage();
     void saveImage();
     void closeImage();
     void scaleImage(float factor);
@@ -62,6 +63,7 @@ private:
     void rotate90();
     void drawImage();
     void refreshImage();
+    void setShortcuts();
     void connectSignals();
     State createState();
     void updateState();

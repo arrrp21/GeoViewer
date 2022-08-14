@@ -121,23 +121,23 @@ void CommonImageTransformer::equalizeHistogram(int from, int to)
     auto minval = min(from, to, imageData);
     auto maxval = max(from, to, imageData);
 
-    /*for (int i = from; i < to; i++)
+    for (int i = from; i < to; i++)
     {
         for (int j = 0; j < imageWrapper.width(); j++)
         {
             newImageData.at(i, j) = static_cast<double>(imageData.at(i, j) - minval) / (maxval - minval) * std::numeric_limits<GprData::DataType>::max();
         }
-    }*/
+    }
 
     qDebug() << "lut created";
 
-    for (int i = from; i < to; i++)
+    /*for (int i = from; i < to; i++)
     {
         for (int j = 0; j < imageWrapper.width(); j++)
         {
             newImageData.at(i, j) = lut[newImageData.at(i, j)];
         }
-    }
+    }*/
     qDebug() << "before setNewImage";
 
     qDebug() << "after setNewImage";

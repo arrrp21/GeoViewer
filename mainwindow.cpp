@@ -37,11 +37,8 @@ MainWindow::MainWindow(QWidget *parent)
     , centralWidget(new QWidget)
 {
     ui->setupUi(this);
-    ui->actionOpen->setShortcut(QKeySequence::Open);
-    ui->actionSave->setShortcut(QKeySequence::Save);
-    ui->actionUndo->setShortcut(QKeySequence::Undo);
-    ui->actionRedo->setShortcut(QKeySequence::Redo);
-    ui->actionClose->setShortcut(QKeySequence::Close);
+
+    setShortcuts();
 
     panel->hide();
 
@@ -86,6 +83,21 @@ void MainWindow::toggleMenuActions(bool isEnabled)
     ui->menuTools->setEnabled(isEnabled);
 }
 
+void MainWindow::askForSaveImage()
+{
+    QMessageBox::StandardButton result;
+    result = QMessageBox::question(
+                this,
+                "GeoViewer",
+                "Do you want to save your image before closing?",
+                QMessageBox::Yes | QMessageBox::No);
+
+    if (result == QMessageBox::Yes)
+    {
+        saveImage();
+    }
+}
+
 void MainWindow::saveImage()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Choose file"), "./", tr("Images (*.jpg *.png *.bmp)"));
@@ -102,6 +114,8 @@ void MainWindow::closeImage()
     disableMenuActions();
     imageLabel->clearImage();
     stateMachine.reset();
+    imageWrapper.reset();
+    imageTransformer.reset();
     panel->hide();
     scrollArea->hide();
 }
@@ -209,23 +223,17 @@ void MainWindow::on_actionSaveTriggered(bool)
 
 void MainWindow::on_actionCloseTriggered(bool)
 {
-    QMessageBox::StandardButton result;
-    result = QMessageBox::question(
-                this,
-                "GeoViewer",
-                "Do you want to save your image before closing?",
-                QMessageBox::Yes | QMessageBox::No);
-
-    if (result == QMessageBox::Yes)
-    {
-        saveImage();
-    }
+    askForSaveImage();
     closeImage();
 }
 
 void MainWindow::on_actionExitTriggered(bool)
 {
-
+    if (imageWrapper)
+    {
+        askForSaveImage();
+    }
+    QApplication::quit();
 }
 
 void MainWindow::on_actionUndoTriggered(bool)
@@ -452,6 +460,16 @@ void MainWindow::resetOperation()
 {
     panel->uncheckRadioButton();
     operation = image_transforming::Operation::none;
+}
+
+void MainWindow::setShortcuts()
+{
+    ui->actionOpen->setShortcut(QKeySequence::Open);
+    ui->actionSave->setShortcut(QKeySequence::Save);
+    ui->actionUndo->setShortcut(QKeySequence::Undo);
+    ui->actionRedo->setShortcut(QKeySequence::Redo);
+    ui->actionClose->setShortcut(QKeySequence::Close);
+    ui->actionExit->setShortcut(QKeySequence::Quit);
 }
 
 void MainWindow::connectSignals()
