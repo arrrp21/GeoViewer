@@ -9,6 +9,7 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    ChooseMaskDialog.cpp \
     CommonImageTransformer.cpp \
     GprData.cpp \
     GpuImageTransformer.cpp \
@@ -27,6 +28,7 @@ INCLUDEPATH += "$$PWD/CL" \
         "$$PWD/kernels"
 
 HEADERS += \
+    ChooseMaskDialog.hpp \
     CircularBuffer.hpp \
     CommonImageTransformer.hpp \
     GprData.hpp \
@@ -40,6 +42,7 @@ HEADERS += \
     OpenCLUtils.hpp \
     Operation.hpp \
     Panel.hpp \
+    PredefinedMasks.hpp \
     QImageWrapper.hpp \
     State.hpp \
     StateMachine.hpp \
@@ -54,6 +57,7 @@ HEADERS += \
     $$files(*.cl)
 
 FORMS += \
+    ChooseMaskDialog.ui \
     Panel.ui \
     mainwindow.ui
 

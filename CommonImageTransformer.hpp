@@ -31,5 +31,10 @@ private:
 
     template <class MaskType>
     void applyFilter(const MaskType& mask);
+    void fillEdges(ImageData&, int, int);
+    void fillUpperEdge(ImageData&, int);
+    void fillRightEdge(ImageData&, int, int);
+    void fillLowerEdge(ImageData&, int);
+    void fillLeftEdge(ImageData&, int, int);
 };
 } // namespace image_transforming

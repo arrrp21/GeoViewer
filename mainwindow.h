@@ -22,6 +22,7 @@ class ImageTransformer;
 } // namespace image_transforming
 class ImageLabel;
 class Panel;
+class ChooseMaskDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -39,6 +40,7 @@ private:
     QImage image;
     ImageLabel* imageLabel;
     Panel* panel;
+    ChooseMaskDialog* chooseMaskDialog;
     QScrollArea* scrollArea;
     QVBoxLayout* layout;
     QWidget* centralWidget;

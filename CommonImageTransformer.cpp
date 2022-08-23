@@ -1,6 +1,7 @@
 #include "CommonImageTransformer.hpp"
 #include "QImageWrapper.hpp"
 #include "Mask.hpp"
+#include "Log.hpp"
 
 namespace image_transforming
 {
@@ -92,17 +93,17 @@ void CommonImageTransformer::gain(int from, int to, double gainLower, double gai
 
     ImageData newImageData{imageWrapper.getPreviousImageData()};
 
-    double step = (gainUpper - gainLower) / (to - from);
+    double step = (gainUpper - gainLower) / (to - from + 1);
     double gain = gainLower;
-    for (int i = from; i < to; i++)
+    for (int i = from; i <= to; i++)
     {
-        gain += step;
         for (int j = 0; j < imageWrapper.width(); j++)
         {
             std::uint64_t tempNewValue = static_cast<std::uint64_t>(newImageData.at(i, j) * gain);
             GprData::DataType newValue = tempNewValue <= limits::max() ? tempNewValue : limits::max();
             newImageData.at(i, j) = newValue;
         }
+        gain += step;
     }
 
     imageWrapper.setNewImage(std::move(newImageData));
@@ -215,7 +216,6 @@ void CommonImageTransformer::applyFilter(const MaskType& mask)
     int midHeight = mask.height/2;
     int midWidth = mask.width/2;
 
-    int c = 0;
     for (int row = midHeight; row < height - midHeight; row++)
     {
         for (int col = midWidth; col < width - midWidth; col++)
@@ -230,13 +230,21 @@ void CommonImageTransformer::applyFilter(const MaskType& mask)
                 value = limits::max();
             else if (value < 0)
             {
-                if (c++ % 100 == 0)
-                    qDebug() << value;
                 value = 0;
             }
             newImageData.at(row, col) = static_cast<GprData::DataType>(value);
         }
     }
+
+    for (int row = 0; row < midHeight; row++)
+    {
+        for (int col = 0; col < width; col++)
+        {
+            newImageData.at(row, col) = newImageData.at(midHeight, col);
+        }
+    }
+
+    fillEdges(newImageData, midHeight, midWidth);
 
     imageWrapper.setNewImage(std::move(newImageData));
 }
@@ -302,5 +310,63 @@ GprData::DataType CommonImageTransformer::max(int from, int to, const ImageData&
                 max = imageData.at(i, j);
 
     return max;
+}
+
+void CommonImageTransformer::fillEdges(ImageData& imageData, int midHeight, int midWidth)
+{
+    fillUpperEdge(imageData, midHeight);
+    fillRightEdge(imageData, midHeight, midWidth);
+    fillLowerEdge(imageData, midHeight);
+    fillLeftEdge(imageData, midHeight, midWidth);
+}
+
+void CommonImageTransformer::fillUpperEdge(ImageData& imageData, int midHeight)
+{
+    int width = imageData.getWidth();
+    for (int row = 0; row < midHeight; row++)
+    {
+        for (int col = 0; col < width; col++)
+        {
+            imageData.at(row, col) = imageData.at(midHeight, col);
+        }
+    }
+}
+
+void CommonImageTransformer::fillRightEdge(ImageData& imageData, int midHeight, int midWidth)
+{
+    int height = imageData.getHeight();
+    for (int row = midHeight; row < height - midHeight; row++)
+    {
+        for (int col = 0; col < midWidth; col++)
+        {
+            imageData.at(row, col) = imageData.at(row, midWidth);
+        }
+    }
+}
+
+void CommonImageTransformer::fillLowerEdge(ImageData& imageData, int midHeight)
+{
+    int height = imageData.getHeight();
+    int width = imageData.getWidth();
+    for (int row = height - midHeight; row < height; row++)
+    {
+        for (int col = 0; col < width; col++)
+        {
+            imageData.at(row, col) = imageData.at(height - midHeight - 1, col);
+        }
+    }
+}
+
+void CommonImageTransformer::fillLeftEdge(ImageData& imageData, int midHeight, int midWidth)
+{
+    int height = imageData.getHeight();
+    int width = imageData.getWidth();
+    for (int row = midHeight; row < height - midHeight; row++)
+    {
+        for (int col = width - midWidth; col < width; col++)
+        {
+            imageData.at(row, col) = imageData.at(row, width - midWidth - 1);
+        }
+    }
 }
 } // namespace image_transforming

@@ -24,6 +24,7 @@
 #include "Visitor.hpp"
 #include "fmt/format.h"
 #include "Panel.hpp"
+#include "ChooseMaskDialog.hpp"
 #include "Mask.hpp"
 #include "StateMachine.hpp"
 
@@ -32,6 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
     , imageLabel(new ImageLabel(scaleFactor))
     , panel(new Panel(this))
+    , chooseMaskDialog(new ChooseMaskDialog(this))
     , scrollArea(new QScrollArea)
     , layout(new QVBoxLayout)
     , centralWidget(new QWidget)
@@ -100,11 +102,30 @@ void MainWindow::askForSaveImage()
 
 void MainWindow::saveImage()
 {
-    QString fileName = QFileDialog::getSaveFileName(this, tr("Choose file"), "./", tr("Images (*.jpg *.png *.bmp)"));
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Choose file"), "./", tr("Images (*.jpg *.png *.bmp);;Plain Text(*.txt)"));
     qDebug() << fileName;
 
     if (fileName.isNull())
         return;
+
+    if (fileName.endsWith(".txt"))
+    {
+        QFile file(fileName);
+        file.open(QIODevice::WriteOnly);
+        QTextStream stream(&file);
+
+        const ImageData& imageData = imageWrapper->getImageData();
+        for (int row = 0; row < imageWrapper->height(); row++)
+        {
+            for (int col = 0; col < imageWrapper->width(); col++)
+            {
+                stream << imageData.at(row, col) << " ";
+            }
+            stream << "\n";
+        }
+        file.close();
+        return;
+    }
 
     imageWrapper->getImage().save(fileName);
 }
@@ -274,10 +295,17 @@ void MainWindow::on_actionRotate90Triggered(bool)
 
 void MainWindow::on_actionHighPassFilterTriggered(bool)
 {
-    image_transforming::details::Mask<int> highPassFilter{3, 3, {{0, -1, 0}, {-1, 4, -1}, {0, -1, 0}}};
-    imageTransformer->applyFilter(image_transforming::Mask{highPassFilter});
-    refreshImage();
-    updateState();
+    if (chooseMaskDialog->exec() == QDialog::Accepted)
+    {
+        LOG_INFO("accepted");
+        image_transforming::Mask mask = chooseMaskDialog->getMask();
+        std::visit([](auto& concreteMask) { concreteMask.print(); }, mask);
+        imageTransformer->applyFilter(mask);
+        refreshImage();
+        updateState();
+    }
+    else
+        LOG_INFO("rejected");
 }
 
 void MainWindow::on_actionBackgroundRemovalTriggered(bool)
@@ -414,8 +442,10 @@ void MainWindow::on_rbGainChecked()
 
 void MainWindow::on_buttonApplyClicked()
 {
-    updateState();
-    resetOperation();
+    if (operation != image_transforming::Operation::none)
+    {
+        updateState();
+    }
 }
 
 void MainWindow::on_buttonCancelClicked()
@@ -445,6 +475,7 @@ void MainWindow::updateState()
     State state = createState();
     stateMachine->updateState(state);
     imageWrapper->updatePreviousImage();
+    resetOperation();
 }
 
 void MainWindow::restoreState(State& state)
@@ -452,6 +483,7 @@ void MainWindow::restoreState(State& state)
     panel->restoreState(state);
     setTopTrimmed(state.isTopTrimmed);
     imageWrapper->setNewImage(std::move(state.imageData));
+    imageWrapper->updatePreviousImage();
     panel->setImageHeight(imageWrapper->height());
     refreshImage();
 }

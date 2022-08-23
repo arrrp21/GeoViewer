@@ -7,12 +7,17 @@ StateMachine::StateMachine()
 
 void StateMachine::updateState(State&& state)
 {
+    if (currentState > 0)
+    {
+        states.removeHead(currentState);
+        currentState = 0;
+    }
     states.add(std::forward<State>(state));
 }
 
 void StateMachine::updateState(State& state)
 {
-    states.add(std::forward<State>(state));
+    updateState(std::forward<State>(state));
 }
 
 std::optional<State> StateMachine::previousState()

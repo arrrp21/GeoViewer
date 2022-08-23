@@ -5,8 +5,11 @@ template <typename T, std::size_t maxSize = 20>
 class CircularBuffer
 {
 public:
-    CircularBuffer()
+    CircularBuffer() {}
+
+    void reset()
     {
+        m_size = m_head = m_tail = 0;
     }
 
     void add(T&& value)
@@ -56,9 +59,8 @@ public:
 
         if (numOfElements >= m_size)
         {
-            m_size = 0;
-            m_head = 0;
-            m_tail = 0;
+            reset();
+            return;
         }
 
         m_head = (m_head - numOfElements) % maxSize;
@@ -67,7 +69,7 @@ public:
 
     bool isFull() const { return m_size == maxSize; }
     bool isEmpty() const { return m_size == 0; }
-    std::size_t size() { return m_size; }
+    std::size_t size() const { return m_size; }
 
 private:
     std::array<T, maxSize> values;
