@@ -1,3 +1,5 @@
+#define USHORT_MAX (1<<16) - 1
+
 __kernel void rotate90(__global ushort* src, __global ushort* dest, uint newWidth, uint newHeight, uint workGroupSize)
 {
     uint groupWidth = get_global_id(0);
@@ -27,7 +29,7 @@ __kernel void linearGain(
     int groupHeight = get_global_id(0) + from;
 
     float gain = gainLower + get_global_id(0) * step;
-    uint ushortLimit = 1<<16 - 1;
+    uint ushortLimit = USHORT_MAX;
 
     int w;
     for (w = 0; w < width; w++)
@@ -37,4 +39,38 @@ __kernel void linearGain(
         dest[groupHeight * width + w] = newValue;
     }
 }
+
+
+__kernel void applyFilter(
+    __global ushort* src,
+    __global ushort* dest,
+    uint width,
+    uint height,
+    _global int* mask,
+    uint maskWidth,
+    uint maskHeight)
+{
+    int midHeight = maskHeight/2;
+	int midWidth = maskWidth/2;
+    int row, col, i, j; 
+    for (row = midHeight; row < height - midHeight; row++)
+	{
+	    for (col = midWidth; col < width - midWidth; col++)
+		{
+		    int value = 0;
+			for (i = 0; i < maskHeight; i++)
+			{
+			    for (j = 0; j < maskWidth; j++)
+				{
+					int r = row + i - midHeight;
+					int c = col + j - midWidth;
+				    value += src[r * width + c] * mask[i * maskWidth + j];
+				}
+			}
+			
+		}
+	}
+}
+
+
 

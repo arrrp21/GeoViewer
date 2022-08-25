@@ -48,6 +48,11 @@ GpuImageTransformer::GpuImageTransformer(QImageWrapper &imageWrapper)
 
     context = contextWrapper.get();
 
+    cl_uint ret;
+
+    clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &ret, NULL);
+    qDebug() << "CL_DEVICE_MAX_COMPUTE_UNITS: " << ret;
+
     setupKernels(context);
 
     qDebug() << "created GpuImageTransformer";
@@ -112,8 +117,8 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
     cl_command_queue queue = clCreateCommandQueue(context, device, 0, &err);
     ASSERT_NO_ERROR(err, "clCreateCommandQueue");
 
-    const GprData::DataType* src = imageWrapper.getOriginalImageData().getData();
-    size_t sizeInBytes = imageWrapper.getImageData().getSizeInBytes();
+    const GprData::DataType* src = imageWrapper.getPreviousImageData().getData();
+    size_t sizeInBytes = imageWrapper.getPreviousImageData().getSizeInBytes();
     cl_mem input = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeInBytes, NULL, &err);
     ASSERT_NO_ERROR(err, "clCreateBuffer: input");
 
@@ -123,7 +128,7 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
     err = clEnqueueWriteBuffer(queue, input, CL_TRUE, 0, sizeInBytes, (void*)src, 0, NULL, NULL);
     ASSERT_NO_ERROR(err, "clEnqueueWriteBuffer");
 
-    cl_float step = (gainUpper - gainLower) / (to - from);
+    cl_float step = (gainUpper - gainLower) / (to - from + 1);
     cl_uint width = imageWrapper.width();
     cl_uint height = imageWrapper.height();
     cl_uint from_ = static_cast<cl_uint>(from);
@@ -137,12 +142,12 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
     err = clEnqueueNDRangeKernel(queue, kernelLinearGain, 1, 0, globalws, localws, 0, NULL, NULL);
     ASSERT_NO_ERROR(err, "clEnqueueNDRangeKernel");
 
-    ImageData newImageData{imageWrapper.getOriginalImageData()};
+    ImageData newImageData{imageWrapper.getPreviousImageData()};
     GprData::DataType* newRawData = newImageData.getData();
     err = clEnqueueReadBuffer(queue, output, CL_TRUE, 0, sizeInBytes, (void*)newRawData, NULL, NULL, NULL);
     ASSERT_NO_ERROR(err, "clEnqueueReadBuffer");
 
-    ImageData finalImageData{imageWrapper.getOriginalImageData()};
+    ImageData finalImageData{imageWrapper.getPreviousImageData()};
 
     std::memcpy(
         static_cast<void*>(&finalImageData.at(from, 0)),
