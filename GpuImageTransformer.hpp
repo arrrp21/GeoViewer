@@ -31,6 +31,8 @@ public:
     void backgroundRemoval() override;
     void trimTop() override;
 
+    void commitChanges(image_transforming::Operation) override {}
+
 private:
     QImageWrapper& imageWrapper;
 

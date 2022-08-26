@@ -113,8 +113,8 @@ void CommonImageTransformer::equalizeHistogram(int from, int to)
 {
     const ImageData& imageData = imageWrapper.getPreviousImageData();
 
-    qDebug() << "equalizeHistogram from: " << from << ", to: " << to;
-    qDebug() << "min: " << min(from, to, imageData) << ", max: " << max(from, to, imageData);
+    LOG_INFO("equalizeHistogram from: {} to {}", from, to);
+    LOG_INFO("min: {}, max {}", min(from, to, imageData), max(from, to, imageData));
 
     ImageData newImageData{imageWrapper.getPreviousImageData()};
     LookupTable lut = createLut(min(from, to, imageData), max(from, to, imageData));

@@ -3,6 +3,7 @@
 #include <array>
 
 #include "GprData.hpp"
+#include "Operation.hpp"
 
 namespace image_transforming
 {
@@ -28,5 +29,7 @@ public:
     virtual void applyFilter(const Mask&) = 0;
     virtual void backgroundRemoval() = 0;
     virtual void trimTop() = 0;
+
+    virtual void commitChanges(image_transforming::Operation) = 0;
 };
 } // namespace image_transforming

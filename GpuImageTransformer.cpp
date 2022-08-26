@@ -2,6 +2,7 @@
 #include "QImageWrapper.hpp"
 #include "OpenCLErrors.hpp"
 #include "OpenCLUtils.hpp"
+#include "Log.hpp"
 
 #include <QMessageBox>
 
@@ -51,7 +52,7 @@ GpuImageTransformer::GpuImageTransformer(QImageWrapper &imageWrapper)
     cl_uint ret;
 
     clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &ret, NULL);
-    qDebug() << "CL_DEVICE_MAX_COMPUTE_UNITS: " << ret;
+    LOG_INFO("CL_DEVICE_MAX_COMPUTE_UNITS: {}", ret);
 
     setupKernels(context);
 
@@ -138,7 +139,7 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
     ASSERT_NO_ERROR(err, "setKernelArgs");
 
     size_t localws[1] = {1u};
-    size_t globalws[1] = {static_cast<size_t>(to - from + 1)};
+    size_t globalws[1] = {static_cast<size_t>((to - from + 1)/16) + 1u};
     err = clEnqueueNDRangeKernel(queue, kernelLinearGain, 1, 0, globalws, localws, 0, NULL, NULL);
     ASSERT_NO_ERROR(err, "clEnqueueNDRangeKernel");
 
@@ -162,24 +163,6 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
     ASSERT_NO_ERROR(err, "clReleaseMemObject");
     err = clReleaseCommandQueue(queue);
     ASSERT_NO_ERROR(err, "clReleaseCommandQueue");
-
-
-    /*ImageData newImageData{imageWrapper.getOriginalImageData()};
-
-    double step = (gainUpper - gainLower) / (to - from);
-    double gain = gainLower;
-    for (int i = from; i < to; i++)
-    {
-        gain += step;
-        for (int j = 0; j < imageWrapper.width(); j++)
-        {
-            std::uint64_t tempNewValue = static_cast<std::uint64_t>(newImageData.at(i, j) * gain);
-            GprData::DataType newValue = tempNewValue <= limits::max() ? tempNewValue : limits::max();
-            newImageData.at(i, j) = newValue;
-        }
-    }
-
-    imageWrapper.setNewImage(std::move(newImageData));*/
 }
 
 void GpuImageTransformer::equalizeHistogram(int from, int to)

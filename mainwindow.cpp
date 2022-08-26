@@ -297,15 +297,12 @@ void MainWindow::on_actionHighPassFilterTriggered(bool)
 {
     if (chooseMaskDialog->exec() == QDialog::Accepted)
     {
-        LOG_INFO("accepted");
         image_transforming::Mask mask = chooseMaskDialog->getMask();
         std::visit([](auto& concreteMask) { concreteMask.print(); }, mask);
         imageTransformer->applyFilter(mask);
         refreshImage();
         updateState();
     }
-    else
-        LOG_INFO("rejected");
 }
 
 void MainWindow::on_actionBackgroundRemovalTriggered(bool)
@@ -329,7 +326,6 @@ void MainWindow::on_actionTrimTopTriggered(bool)
 
 void MainWindow::on_actionGpuAccelerationToggled(bool toggled)
 {
-    LOG_INFO("on_actionGpuAccelerationToggled");
     if (imageTransformer and imageWrapper)
     {
         if (toggled)
@@ -378,7 +374,7 @@ void MainWindow::on_mouseMoved(int x, int y)
 void MainWindow::on_sliderGainChanged(int from, int to, double lowerGain, double upperGain)
 {
     imageTransformer->gain(from, to, lowerGain, upperGain);
-    drawImage();
+    refreshImage();
 }
 
 void MainWindow::on_sliderRangeChanged(int from, int to)
@@ -444,6 +440,7 @@ void MainWindow::on_buttonApplyClicked()
 {
     if (operation != image_transforming::Operation::none)
     {
+        imageTransformer->commitChanges(operation);
         updateState();
     }
 }

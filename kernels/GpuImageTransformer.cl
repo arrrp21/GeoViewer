@@ -26,17 +26,22 @@ __kernel void linearGain(
     float step,
     float gainLower)
 {
-    int groupHeight = get_global_id(0) + from;
+    int groupFrom = (get_global_id(0) * 16) + from;
+	int groupTo = groupFrom + 16 <= height ? groupFrom + 16 : height;
 
-    float gain = gainLower + get_global_id(0) * step;
-    uint ushortLimit = USHORT_MAX;
+    float gain = gainLower + (get_global_id(0) * 16) * step;
+    uint ushortMax = USHORT_MAX;
 
-    int w;
-    for (w = 0; w < width; w++)
-    {
-        uint tempNewValue = (uint)((float)src[groupHeight * width + w] * gain);
-        ushort newValue = tempNewValue <= ushortLimit ? tempNewValue : ushortLimit;
-        dest[groupHeight * width + w] = newValue;
+    int w, h;
+	for (h = groupFrom; h < groupTo; h++)
+	{
+    	for (w = 0; w < width; w++)
+	    {
+    	    uint tempNewValue = (uint)((float)src[h * width + w] * gain);
+            ushort newValue = tempNewValue <= ushortMax ? tempNewValue : ushortMax;
+    	    dest[h * width + w] = newValue;
+        }
+		gain += step;
     }
 }
 
@@ -46,10 +51,11 @@ __kernel void applyFilter(
     __global ushort* dest,
     uint width,
     uint height,
-    _global int* mask,
+    __global int* mask,
     uint maskWidth,
     uint maskHeight)
 {
+    uint ushortMax = USHORT_MAX;
     int midHeight = maskHeight/2;
 	int midWidth = maskWidth/2;
     int row, col, i, j; 
@@ -67,7 +73,11 @@ __kernel void applyFilter(
 				    value += src[r * width + c] * mask[i * maskWidth + j];
 				}
 			}
-			
+			if (value > ushortMax)
+			    value = ushortMax;
+			else if (value <= 0)
+			    value = 0;
+		    dest[row * width + col] = (ushort)value;
 		}
 	}
 }
