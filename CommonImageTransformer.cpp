@@ -51,41 +51,6 @@ void CommonImageTransformer::rotate90()
     imageWrapper.setNewImage(std::move(newData));
 }
 
-
-void CommonImageTransformer::changeContrast(float contrast)
-{
-    qDebug() << "changeContrast: " << contrast;
-    LookupTable lut = createLut(contrast);
-
-    ImageData newImageData(imageWrapper.width(), imageWrapper.height());
-    const auto size = newImageData.getSize();
-
-    const ImageData oldImageData = imageWrapper.getPreviousImageData();
-    for (int i = 0; i < size; i++)
-    {
-        newImageData[i] = lut[oldImageData[i]];
-    }
-
-    imageWrapper.setNewImage(std::move(newImageData));
-}
-
-void CommonImageTransformer::gain(int from, int to, float value)
-{
-    ImageData newImageData{imageWrapper.getPreviousImageData()};
-
-    for (int i = from; i < to; i++)
-    {
-        for (int j = 0; j < imageWrapper.width(); j++)
-        {
-            std::uint64_t tempNewValue = static_cast<std::uint64_t>(newImageData.at(i, j) * value);
-            GprData::DataType newValue = tempNewValue <= limits::max() ? tempNewValue : limits::max();
-            newImageData.at(i, j) = newValue;
-        }
-    }
-
-    imageWrapper.setNewImage(std::move(newImageData));
-}
-
 void CommonImageTransformer::gain(int from, int to, double gainLower, double gainUpper)
 {
     if (from < 0 or to >= imageWrapper.height())

@@ -12,15 +12,13 @@ public:
     CommonImageTransformer(QImageWrapper& imageWrapper);
 
     void rotate90() override;
-    void changeContrast(float contrast) override;
-    void gain(int from, int to, float value) override;
     void gain(int from, int to, double gainLower, double gainUpper) override;
     void equalizeHistogram(int from, int to) override;
     void applyFilter(const Mask& mask) override;
     void backgroundRemoval() override;
     void trimTop() override;
 
-    void commitChanges(image_transforming::Operation) override {}
+    void commitChanges(Operation) override {}
 
 private:
     QImageWrapper& imageWrapper;

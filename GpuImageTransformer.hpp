@@ -21,17 +21,16 @@ class GpuImageTransformer : public ImageTransformer
 {
 public:
     GpuImageTransformer(QImageWrapper& imageWrapper);
+    ~GpuImageTransformer() override;
 
     void rotate90() override;
-    void changeContrast(float contrast) override;
-    void gain(int from, int to, float value) override;
     void gain(int from, int to, double gainLower, double gainUpper) override;
     void equalizeHistogram(int from, int to) override;
     void applyFilter(const Mask& mask) override;
     void backgroundRemoval() override;
     void trimTop() override;
 
-    void commitChanges(image_transforming::Operation) override {}
+    void commitChanges(Operation) override;
 
 private:
     QImageWrapper& imageWrapper;
@@ -40,6 +39,8 @@ private:
     cl_device_id device;
     cl_kernel kernelRotate90{nullptr};
     cl_kernel kernelLinearGain{nullptr};
+
+    cl_command_queue queueGain;
 
     struct Kernels
     {
@@ -54,7 +55,8 @@ private:
              {"linearGain", &kernelLinearGain}}
         }};
 
-    void setupKernels(cl_context context);
+    void setupKernels();
+    void setupQueues();
     cl_program buildProgram(cl_context context, const QString& fileName);
     cl_kernel createKernel(cl_program program, const char* functionName);
 
@@ -62,5 +64,10 @@ private:
 
     bool checkError(cl_int error, std::optional<QString> functionName = std::nullopt);
     size_t upToMultipleOf(int multiplier, size_t value);
+
+    void releaseDevice();
+    void releaseContext();
+    void releaseKernels();
+    void releaseQueues();
 };
 } // namespace image_transforming

@@ -50,13 +50,20 @@ GpuImageTransformer::GpuImageTransformer(QImageWrapper &imageWrapper)
     context = contextWrapper.get();
 
     cl_uint ret;
-
     clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &ret, NULL);
     LOG_INFO("CL_DEVICE_MAX_COMPUTE_UNITS: {}", ret);
 
-    setupKernels(context);
+    setupKernels();
+    setupQueues();
+}
 
-    qDebug() << "created GpuImageTransformer";
+GpuImageTransformer::~GpuImageTransformer()
+{
+    LOG_INFO("Destroying GpuImageTransformer");
+    releaseDevice();
+    releaseContext();
+    releaseKernels();
+    releaseQueues();
 }
 
 void GpuImageTransformer::rotate90()
@@ -65,8 +72,8 @@ void GpuImageTransformer::rotate90()
     cl_command_queue queue = clCreateCommandQueue(context, device, 0, &err);
     ASSERT_NO_ERROR(err, "clCreateCommandQueue");
 
-    const GprData::DataType* src = imageWrapper.getImageData().getData();
-    size_t sizeInBytes = imageWrapper.getImageData().getSizeInBytes();
+    const GprData::DataType* src = imageWrapper.getPreviousImageData().getData();
+    size_t sizeInBytes = imageWrapper.getPreviousImageData().getSizeInBytes();
     cl_mem input = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeInBytes, NULL, &err);
     ASSERT_NO_ERROR(err, "clCreateBuffer: input");
 
@@ -94,19 +101,11 @@ void GpuImageTransformer::rotate90()
     err = clEnqueueReadBuffer(queue, output, CL_TRUE, 0, sizeInBytes, (void*)newRawData, NULL, NULL, NULL);
 
     imageWrapper.setNewImage(std::move(newData));
-    imageWrapper.updatePreviousImage();
 
-    qDebug() << "rotate90 on GPU done";
-}
-
-void GpuImageTransformer::changeContrast(float contrast)
-{
-
-}
-
-void GpuImageTransformer::gain(int from, int to, float value)
-{
-
+    err = clReleaseMemObject(input);
+    ASSERT_NO_ERROR(err, "clReleaseMemObject");
+    err = clReleaseMemObject(output);
+    ASSERT_NO_ERROR(err, "clReleaseMemObject");
 }
 
 void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUpper)
@@ -115,18 +114,16 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
         return;
 
     cl_int err;
-    cl_command_queue queue = clCreateCommandQueue(context, device, 0, &err);
-    ASSERT_NO_ERROR(err, "clCreateCommandQueue");
 
     const GprData::DataType* src = imageWrapper.getPreviousImageData().getData();
     size_t sizeInBytes = imageWrapper.getPreviousImageData().getSizeInBytes();
-    cl_mem input = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeInBytes, NULL, &err);
-    ASSERT_NO_ERROR(err, "clCreateBuffer: input");
+    cl_mem inputGain = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeInBytes, NULL, &err);
+    ASSERT_NO_ERROR(err, "clCreateBuffer: inputGain");
 
-    cl_mem output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeInBytes, NULL, &err);
-    ASSERT_NO_ERROR(err, "clCreateBuffer: output");
+    cl_mem outputGain = clCreateBuffer(context, CL_MEM_WRITE_ONLY, sizeInBytes, NULL, &err);
+    ASSERT_NO_ERROR(err, "clCreateBuffer: outputGain");
 
-    err = clEnqueueWriteBuffer(queue, input, CL_TRUE, 0, sizeInBytes, (void*)src, 0, NULL, NULL);
+    err = clEnqueueWriteBuffer(queueGain, inputGain, CL_TRUE, 0, sizeInBytes, (void*)src, 0, NULL, NULL);
     ASSERT_NO_ERROR(err, "clEnqueueWriteBuffer");
 
     cl_float step = (gainUpper - gainLower) / (to - from + 1);
@@ -135,17 +132,17 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
     cl_uint from_ = static_cast<cl_uint>(from);
     cl_float gainLower_ = static_cast<cl_float>(gainLower);
 
-    open_cl_utils::setKernelArgs(kernelLinearGain, input, output, width, height, from_, step, gainLower_);
+    open_cl_utils::setKernelArgs(kernelLinearGain, inputGain, outputGain, width, height, from_, step, gainLower_);
     ASSERT_NO_ERROR(err, "setKernelArgs");
 
     size_t localws[1] = {1u};
     size_t globalws[1] = {static_cast<size_t>((to - from + 1)/16) + 1u};
-    err = clEnqueueNDRangeKernel(queue, kernelLinearGain, 1, 0, globalws, localws, 0, NULL, NULL);
+    err = clEnqueueNDRangeKernel(queueGain, kernelLinearGain, 1, 0, globalws, localws, 0, NULL, NULL);
     ASSERT_NO_ERROR(err, "clEnqueueNDRangeKernel");
 
     ImageData newImageData{imageWrapper.getPreviousImageData()};
     GprData::DataType* newRawData = newImageData.getData();
-    err = clEnqueueReadBuffer(queue, output, CL_TRUE, 0, sizeInBytes, (void*)newRawData, NULL, NULL, NULL);
+    err = clEnqueueReadBuffer(queueGain, outputGain, CL_TRUE, 0, sizeInBytes, (void*)newRawData, NULL, NULL, NULL);
     ASSERT_NO_ERROR(err, "clEnqueueReadBuffer");
 
     ImageData finalImageData{imageWrapper.getPreviousImageData()};
@@ -157,12 +154,10 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
 
     imageWrapper.setNewImage(std::move(finalImageData));
 
-    err = clReleaseMemObject(input);
+    err = clReleaseMemObject(inputGain);
     ASSERT_NO_ERROR(err, "clReleaseMemObject");
-    err = clReleaseMemObject(output);
+    err = clReleaseMemObject(outputGain);
     ASSERT_NO_ERROR(err, "clReleaseMemObject");
-    err = clReleaseCommandQueue(queue);
-    ASSERT_NO_ERROR(err, "clReleaseCommandQueue");
 }
 
 void GpuImageTransformer::equalizeHistogram(int from, int to)
@@ -185,21 +180,35 @@ void GpuImageTransformer::trimTop()
 
 }
 
-void GpuImageTransformer::setupKernels(cl_context context)
+void GpuImageTransformer::commitChanges(Operation operation)
+{
+
+}
+
+void GpuImageTransformer::setupKernels()
 {
     for (const auto& kernel : kernels)
     {
         cl_program program = buildProgram(context, kernel.programName);
         if (program == nullptr)
             return;
-        for (const auto& function : kernel.functions)
+        for (const auto& [kernelName, kernelPtr] : kernel.functions)
         {
-            cl_kernel kernel = createKernel(program, function.first.c_str());
+            cl_kernel kernel = createKernel(program, kernelName.c_str());
             if (kernel == nullptr)
                 return;
-            *(function.second) = kernel;
+            *(kernelPtr) = kernel;
         }
+        cl_int err = clReleaseProgram(program);
+        ASSERT_NO_ERROR(err, "clReleaseProgram");
     }
+}
+
+void GpuImageTransformer::setupQueues()
+{
+    cl_int err;
+    queueGain = clCreateCommandQueue(context, device, 0, &err);
+    ASSERT_NO_ERROR(err, "clCreateCommandQueue queueGain");
 }
 
 cl_program GpuImageTransformer::buildProgram(cl_context context, const QString &fileName)
@@ -250,5 +259,39 @@ size_t GpuImageTransformer::upToMultipleOf(int multiplier, size_t value)
         return value;
 
     return value + (multiplier - value % multiplier);
+}
+
+void GpuImageTransformer::releaseDevice()
+{
+    cl_int err;
+    err = clReleaseDevice(device);
+    ASSERT_NO_ERROR(err, "clReleaseDevice");
+}
+
+void GpuImageTransformer::releaseContext()
+{
+    cl_int err;
+    err = clReleaseContext(context);
+    ASSERT_NO_ERROR(err, "clReleaseContext");
+}
+
+void GpuImageTransformer::releaseKernels()
+{
+    cl_int err;
+    for (const auto& kernel : kernels)
+    {
+        for (const auto& [_, kernelPtr] : kernel.functions)
+        {
+            err = clReleaseKernel(*kernelPtr);
+            ASSERT_NO_ERROR(err, "clReleaseKernel");
+        }
+    }
+}
+
+void GpuImageTransformer::releaseQueues()
+{
+    cl_int err;
+    err = clReleaseCommandQueue(queueGain);
+    ASSERT_NO_ERROR(err, "clReleaseCommandQueue queueGain");
 }
 } // namespace image_transforming
