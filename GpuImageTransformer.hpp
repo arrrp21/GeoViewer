@@ -1,17 +1,7 @@
 #pragma once
 #include "ImageTransformer.hpp"
 #include <QString>
-
-#define CL_HPP_MINIMUM_OPENCL_VERSION 200
-#define CL_HPP_TARGET_OPENCL_VERSION 200
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wunused-declarations"
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
-#include <CL/cl2.hpp>
-#pragma GCC diagnostic pop
+#include "OpenCLUtils.hpp"
 
 class QImageWrapper;
 

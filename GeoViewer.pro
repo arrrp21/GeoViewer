@@ -15,6 +15,7 @@ SOURCES += \
     GpuImageTransformer.cpp \
     ImageData.cpp \
     ImageLabel.cpp \
+    OpenCLErrors.cpp \
     Panel.cpp \
     QImageWrapper.cpp \
     StateMachine.cpp \

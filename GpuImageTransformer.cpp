@@ -1,7 +1,5 @@
 #include "GpuImageTransformer.hpp"
 #include "QImageWrapper.hpp"
-#include "OpenCLErrors.hpp"
-#include "OpenCLUtils.hpp"
 #include "Log.hpp"
 #include "Mask.hpp"
 
@@ -183,7 +181,7 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
     imageWrapper.setNewImage(std::move(finalImageData));
 }
 
-void GpuImageTransformer::equalizeHistogram(int from, int to)
+void GpuImageTransformer::equalizeHistogram(int, int)
 {
 
 }
@@ -244,7 +242,7 @@ void GpuImageTransformer::applyFilter(const details::Mask<int>& mask)
     ASSERT_NO_ERROR(err, "clReleaseMemObject");
 }
 
-void GpuImageTransformer::applyFilter(const details::Mask<double> &mask)
+void GpuImageTransformer::applyFilter(const details::Mask<double>&)
 {
 
 }

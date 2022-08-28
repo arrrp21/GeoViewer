@@ -1,30 +1,5 @@
 #include "ImageData.hpp"
 
-namespace
-{
-void copyBuffer(GprData::DataType* dest, GprData::DataType* src, std::size_t size)
-{
-    constexpr std::size_t chunkSize = 1 << 20;  // 1 MB
-    std::size_t bytesCopied = 0;
-    int count = 0;
-
-    while (bytesCopied < size)
-    {
-        std::size_t bytesToCopy = chunkSize;
-        if (bytesCopied + chunkSize > size)
-        {
-            bytesToCopy = size - bytesCopied;
-        }
-        std::memcpy(
-            dest + bytesCopied / sizeof(GprData::DataType),
-            src + bytesCopied / sizeof(GprData::DataType),
-            bytesToCopy);
-        bytesCopied += bytesToCopy;
-        count++;
-    }
-}
-} // namespace
-
 ImageData::ImageData(std::vector<GprData::DataType>& dataVector, int width, int height)
     : size{static_cast<int>(dataVector.size())}
     , sizeInBytes{static_cast<int>(dataVector.size() * sizeof(GprData::DataType))}
