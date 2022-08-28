@@ -1,4 +1,4 @@
-#define USHORT_MAX (1<<16) - 1
+#define USHORT_MAX ((1<<16) - 1)
 
 __kernel void rotate90(__global ushort* src, __global ushort* dest, uint newWidth, uint newHeight, uint workGroupSize)
 {
@@ -26,10 +26,10 @@ __kernel void linearGain(
     float step,
     float gainLower)
 {
-    int groupFrom = (get_global_id(0) * 16) + from;
-	int groupTo = groupFrom + 16 <= height ? groupFrom + 16 : height;
+    int groupFrom = (get_global_id(0) * 8) + from;
+	int groupTo = groupFrom + 8 <= height ? groupFrom + 8 : height;
 
-    float gain = gainLower + (get_global_id(0) * 16) * step;
+    float gain = gainLower + (get_global_id(0) * 8) * step;
     uint ushortMax = USHORT_MAX;
 
     int w, h;
@@ -46,24 +46,70 @@ __kernel void linearGain(
 }
 
 
-__kernel void applyFilter(
+__kernel void applyFilterInt3x3(
     __global ushort* src,
     __global ushort* dest,
     uint width,
     uint height,
     __global int* mask,
-    uint maskWidth,
-    uint maskHeight)
+    uint maskHeight,
+    uint maskWidth)
 {
     uint ushortMax = USHORT_MAX;
-    int midHeight = maskHeight/2;
-	int midWidth = maskWidth/2;
-    int row, col, i, j; 
-    for (row = midHeight; row < height - midHeight; row++)
+    size_t midHeight = maskHeight/2;
+	size_t midWidth = maskWidth/2;
+    size_t row, col, i, j;
+	
+    size_t id = get_global_id(0);
+    size_t from = midHeight + id * 8;
+	size_t to = (from + 8) <= (height - midHeight) ? (from + 8) : (height - midHeight);
+	
+	/*int mask11 = mask[0];
+	int mask12 = mask[1];
+	int mask13 = mask[2];
+	int mask21 = mask[3];
+	int mask22 = mask[4];
+	int mask23 = mask[5];
+	int mask31 = mask[6];
+	int mask32 = mask[7];
+	int mask33 = mask[8];*/
+
+    for (row = from; row < to; row++)
 	{
 	    for (col = midWidth; col < width - midWidth; col++)
 		{
 		    int value = 0;
+			
+			/*int r, c;
+			
+			r = row - 1;
+			c = col - 1;
+			value += src[r * width + c] * mask11;
+			
+			c++;
+			value += src[r * width + c] * mask12;
+			
+			c++;
+			value += src[r * width + c] * mask13;
+			
+			
+			r++;
+			c = col - 1;
+			value += src[r * width + c] * mask21;
+			c++;
+			value += src[r * width + c] * mask22;
+			c++;
+			value += src[r * width + c] * mask23;
+			
+			r++;
+			c = col - 1;
+			value += src[r * width + c] * mask31;
+			c++;
+			value += src[r * width + c] * mask32;
+			c++;
+			value += src[r * width + c] * mask33;*/
+
+			
 			for (i = 0; i < maskHeight; i++)
 			{
 			    for (j = 0; j < maskWidth; j++)

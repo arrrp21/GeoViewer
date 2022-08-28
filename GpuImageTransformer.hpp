@@ -9,6 +9,7 @@
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-declarations"
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <CL/cl2.hpp>
 #pragma GCC diagnostic pop
 
@@ -39,8 +40,19 @@ private:
     cl_device_id device;
     cl_kernel kernelRotate90{nullptr};
     cl_kernel kernelLinearGain{nullptr};
+    cl_kernel kernelApplyFilterInt3x3{nullptr};
+
+    cl_uint maxWorkItemDimensions;
+    std::vector<size_t> maxWorkItemSizes;
+    cl_uint maxComputeUnits;
+    size_t maxWorkGroupSize;
+    size_t preferredWorkGroupSizeMultiple;
 
     cl_command_queue queueGain;
+
+    cl_mem inputGain;
+    cl_mem outputGain;
+    bool isGainCommited{true};
 
     struct Kernels
     {
@@ -52,7 +64,8 @@ private:
         {
             "GpuImageTransformer.cl",
             {{"rotate90",   &kernelRotate90  },
-             {"linearGain", &kernelLinearGain}}
+             {"linearGain", &kernelLinearGain},
+             {"applyFilterInt3x3", &kernelApplyFilterInt3x3}}
         }};
 
     void setupKernels();
@@ -64,6 +77,9 @@ private:
 
     bool checkError(cl_int error, std::optional<QString> functionName = std::nullopt);
     size_t upToMultipleOf(int multiplier, size_t value);
+
+    void applyFilter(const details::Mask<int>& mask);
+    void applyFilter(const details::Mask<double>& mask);
 
     void releaseDevice();
     void releaseContext();

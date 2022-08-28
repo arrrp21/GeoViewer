@@ -5,16 +5,10 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QImage>
-#include <QColorTransform>
 #include <QScrollArea>
 #include <QScrollBar>
 #include <QVBoxLayout>
-#include <QPushButton>
-#include <QPainter>
 #include "Log.hpp"
-
-#include <ios>
-#include <cmath>
 
 #include "GprData.hpp"
 #include "ImageLabel.hpp"
@@ -22,7 +16,6 @@
 #include "CommonImageTransformer.hpp"
 #include "GpuImageTransformer.hpp"
 #include "Visitor.hpp"
-#include "fmt/format.h"
 #include "Panel.hpp"
 #include "ChooseMaskDialog.hpp"
 #include "Mask.hpp"
@@ -264,10 +257,6 @@ void MainWindow::on_actionUndoTriggered(bool)
     {
         restoreState(state.value());
     }
-    else
-    {
-        LOG_INFO("couldn't undo");
-    }
 }
 
 void MainWindow::on_actionRedoTriggered(bool)
@@ -276,10 +265,6 @@ void MainWindow::on_actionRedoTriggered(bool)
     if (state)
     {
         restoreState(state.value());
-    }
-    else
-    {
-        LOG_INFO("couldn't redo");
     }
 }
 
@@ -298,7 +283,6 @@ void MainWindow::on_actionHighPassFilterTriggered(bool)
     if (chooseMaskDialog->exec() == QDialog::Accepted)
     {
         image_transforming::Mask mask = chooseMaskDialog->getMask();
-        std::visit([](auto& concreteMask) { concreteMask.print(); }, mask);
         imageTransformer->applyFilter(mask);
         refreshImage();
         updateState();
@@ -447,7 +431,6 @@ void MainWindow::on_buttonApplyClicked()
 
 void MainWindow::on_buttonCancelClicked()
 {
-    LOG_INFO("button cancel clicked");
     State state = stateMachine->latestState();
     restoreState(state);
     resetOperation();

@@ -49,9 +49,7 @@ private:
         for (int i = 0; i < mask.height; i++)
             for (int j = 0; j < mask.width; j++)
             {
-                LOG_INFO("mask.at({}, {}) = {}", i, j, mask.at(i, j));
                 lineEdits[i][j]->setText(QString::number(mask.at(i, j)));
-                LOG_INFO("lineEdits[{}][{}] = {}", i, j, lineEdits[i][j]->text().toStdString());
             }
     }
 

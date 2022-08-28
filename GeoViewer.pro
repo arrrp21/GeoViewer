@@ -18,6 +18,7 @@ SOURCES += \
     Panel.cpp \
     QImageWrapper.cpp \
     StateMachine.cpp \
+    Timer.cpp \
     main.cpp \
     mainwindow.cpp \
     format.cc
@@ -46,6 +47,7 @@ HEADERS += \
     QImageWrapper.hpp \
     State.hpp \
     StateMachine.hpp \
+    Timer.hpp \
     Visitor.hpp \
     fmt/core.h \
     fmt/format.h \

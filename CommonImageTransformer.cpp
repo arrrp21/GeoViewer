@@ -87,23 +87,23 @@ void CommonImageTransformer::equalizeHistogram(int from, int to)
     auto minval = min(from, to, imageData);
     auto maxval = max(from, to, imageData);
 
-    for (int i = from; i < to; i++)
+    /*for (int i = from; i <= to; i++)
     {
         for (int j = 0; j < imageWrapper.width(); j++)
         {
             newImageData.at(i, j) = static_cast<double>(imageData.at(i, j) - minval) / (maxval - minval) * std::numeric_limits<GprData::DataType>::max();
         }
-    }
+    }*/
 
     qDebug() << "lut created";
 
-    /*for (int i = from; i < to; i++)
+    for (int i = from; i < to; i++)
     {
         for (int j = 0; j < imageWrapper.width(); j++)
         {
             newImageData.at(i, j) = lut[newImageData.at(i, j)];
         }
-    }*/
+    }
     qDebug() << "before setNewImage";
 
     qDebug() << "after setNewImage";
@@ -171,7 +171,7 @@ void CommonImageTransformer::trimTop()
 template <class MaskType>
 void CommonImageTransformer::applyFilter(const MaskType& mask)
 {
-    qDebug() << "applyFilter";
+    timer.start(QString::fromStdString(fmt::format("CPU applyFilter int {}x{}", mask.height, mask.width)));
 
     int width = imageWrapper.width();
     int height = imageWrapper.height();
@@ -200,16 +200,10 @@ void CommonImageTransformer::applyFilter(const MaskType& mask)
             newImageData.at(row, col) = static_cast<GprData::DataType>(value);
         }
     }
-
-    for (int row = 0; row < midHeight; row++)
-    {
-        for (int col = 0; col < width; col++)
-        {
-            newImageData.at(row, col) = newImageData.at(midHeight, col);
-        }
-    }
+    timer.stop();
 
     fillEdges(newImageData, midHeight, midWidth);
+
 
     imageWrapper.setNewImage(std::move(newImageData));
 }

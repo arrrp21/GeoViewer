@@ -15,17 +15,20 @@ struct Mask
     Mask(int size)
         : width{size}
         , height{size}
+        , length{size * size}
     {
         values.reserve(size * size);
     }
     Mask(const Mask& other)
         : width{other.width}
         , height{other.height}
+        , length{other.length}
         , values{other.values}
     {}
     Mask(Mask&& other) noexcept
         : width{other.width}
         , height{other.height}
+        , length{other.length}
         , values{std::move(other.values)}
     {
     }
@@ -35,6 +38,7 @@ struct Mask
         {
             width = other.width;
             height = other.height;
+            length = other.length;
             values = other.values;
         }
         return *this;
@@ -43,29 +47,26 @@ struct Mask
     {
         width = other.width;
         height = other.height;
+        length = other.length;
         values = other.values;
 
         other.values.clear();
     }
 
     Mask(int width, int height, std::initializer_list<std::initializer_list<T>> values_)
-        : width{width}, height{height}
+        : width{width}, height{height}, length{width * height}
     {
         values.reserve(width * height);
         for (auto& list : values_)
             for (auto& value : list)
             {
-                if (width == 5)
-                {
-                    qDebug() << "pushing back value: " << value;
-                }
                 values.push_back(value);
             }
     }
 
     void add(T value)
     {
-        if (values.size() < width * height)
+        if (values.size() < length)
             values.push_back(value);
     }
 
@@ -91,6 +92,7 @@ struct Mask
 
     int width;
     int height;
+    int length;
     std::vector<T> values;
 };
 } // namespace details

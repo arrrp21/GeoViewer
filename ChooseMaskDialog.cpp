@@ -35,8 +35,6 @@ ChooseMaskDialog::ChooseMaskDialog(QWidget *parent) :
     drawMaskInputs(defaultMaskSize);
     fillLineEdits(image_transforming::highPassFilter, defaultMaskSize);
     ui->spinBoxMaskSize->setValue(defaultMaskSize);
-    image_transforming::highPassFilter5x5.print();
-    image_transforming::highPassFilter3x3.print();
 }
 
 image_transforming::Mask ChooseMaskDialog::getMask()
@@ -98,7 +96,7 @@ bool ChooseMaskDialog::validateMask()
     {
         for (int j = 0; j < maskSize; j++)
         {
-            const auto& lineEditText = lineEdits[i][j]->text();
+            auto lineEditText = lineEdits[i][j]->text();
             if (not isAtLeastOneDouble)
             {
                 if (lineEditText.contains(',') or lineEditText.contains('.'))
@@ -107,7 +105,7 @@ bool ChooseMaskDialog::validateMask()
                 }
             }
 
-            values.push_back(lineEditText.toDouble(&isOk));
+            values.push_back(lineEditText.replace(",", ".").toDouble(&isOk));
             if (not isOk)
             {
                 mask.reset();
@@ -125,7 +123,6 @@ bool ChooseMaskDialog::validateMask()
     }
     else
     {
-        LOG_INFO("no doubles");
         mask = std::make_unique<image_transforming::Mask>(image_transforming::details::Mask<int>(maskSize));
         auto& maskInt = std::get<image_transforming::details::Mask<int>>(*mask);
         for (const auto& val : values)
@@ -195,6 +192,5 @@ void ChooseMaskDialog::on_buttonCancelClicked(bool)
 
 void ChooseMaskDialog::on_lineEditTextEdited(const QString&)
 {
-    LOG_INFO("line edit changed");
     ui->comboBoxPredefinedMask->setCurrentText(customFilter);
 }

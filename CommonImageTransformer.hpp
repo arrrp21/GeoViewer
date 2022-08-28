@@ -1,5 +1,6 @@
 #pragma once
 #include "ImageTransformer.hpp"
+#include "Timer.hpp"
 
 class ImageData;
 class QImageWrapper;

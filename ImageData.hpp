@@ -1,7 +1,5 @@
 #pragma once
-#include <QtGlobal>
 #include <vector>
-#include <cstring>
 #include "GprData.hpp"
 
 class ImageData

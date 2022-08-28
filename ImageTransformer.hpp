@@ -4,6 +4,7 @@
 
 #include "GprData.hpp"
 #include "Operation.hpp"
+#include "Timer.hpp"
 
 namespace image_transforming
 {
@@ -29,5 +30,8 @@ public:
     virtual void trimTop() = 0;
 
     virtual void commitChanges(Operation) = 0;
+
+protected:
+    Timer timer{};
 };
 } // namespace image_transforming
