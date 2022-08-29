@@ -24,12 +24,13 @@ __kernel void linearGain(
     uint height,
     uint from,
     float step,
-    float gainLower)
+    float gainLower,
+	uint rowsPerWorkItem)
 {
-    int groupFrom = (get_global_id(0) * 8) + from;
-	int groupTo = groupFrom + 8 <= height ? groupFrom + 8 : height;
+    int groupFrom = (get_global_id(0) * rowsPerWorkItem) + from;
+	int groupTo = groupFrom + rowsPerWorkItem <= height ? groupFrom + rowsPerWorkItem : height;
 
-    float gain = gainLower + (get_global_id(0) * 8) * step;
+    float gain = gainLower + (get_global_id(0) * rowsPerWorkItem) * step;
     uint ushortMax = USHORT_MAX;
 
     int w, h;
@@ -46,14 +47,15 @@ __kernel void linearGain(
 }
 
 
-__kernel void applyFilterInt3x3(
+__kernel void applyFilterInt(
     __global ushort* src,
     __global ushort* dest,
     uint width,
     uint height,
     __global int* mask,
     uint maskHeight,
-    uint maskWidth)
+    uint maskWidth,
+	uint rowsPerWorkItem)
 {
     uint ushortMax = USHORT_MAX;
     size_t midHeight = maskHeight/2;
@@ -61,8 +63,8 @@ __kernel void applyFilterInt3x3(
     size_t row, col, i, j;
 	
     size_t id = get_global_id(0);
-    size_t from = midHeight + id * 8;
-	size_t to = (from + 8) <= (height - midHeight) ? (from + 8) : (height - midHeight);
+    size_t from = midHeight + id * rowsPerWorkItem;
+	size_t to = (from + rowsPerWorkItem) <= (height - midHeight) ? (from + rowsPerWorkItem) : (height - midHeight);
 	
 	/*int mask11 = mask[0];
 	int mask12 = mask[1];

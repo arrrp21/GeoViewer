@@ -72,7 +72,7 @@ GpuImageTransformer::GpuImageTransformer(QImageWrapper &imageWrapper)
     setupKernels();
     setupQueues();
 
-    err = clGetKernelWorkGroupInfo(kernelApplyFilterInt3x3, device, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(preferredWorkGroupSizeMultiple), &preferredWorkGroupSizeMultiple, NULL);
+    err = clGetKernelWorkGroupInfo(kernelApplyFilterInt, device, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE, sizeof(preferredWorkGroupSizeMultiple), &preferredWorkGroupSizeMultiple, NULL);
     ASSERT_NO_ERROR(err, "clGetKernelWorkGroupInfo");
     LOG_INFO("CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE: {}", preferredWorkGroupSizeMultiple);
 }
@@ -157,12 +157,13 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
     cl_uint height = imageWrapper.height();
     cl_uint from_ = static_cast<cl_uint>(from);
     cl_float gainLower_ = static_cast<cl_float>(gainLower);
+    constexpr cl_uint rowsPerWorkItem = 1;
 
-    err = open_cl_utils::setKernelArgs(kernelLinearGain, inputGain, outputGain, width, height, from_, step, gainLower_);
+    err = open_cl_utils::setKernelArgs(kernelLinearGain, inputGain, outputGain, width, height, from_, step, gainLower_, rowsPerWorkItem);
     ASSERT_NO_ERROR(err, "setKernelArgs");
 
     size_t localws[1] = {preferredWorkGroupSizeMultiple};
-    size_t globalws[1] = {upToMultipleOf(preferredWorkGroupSizeMultiple, (to - from + 1)/8 + 1u)};
+    size_t globalws[1] = {upToMultipleOf(preferredWorkGroupSizeMultiple, (to - from + 1)/rowsPerWorkItem + 1u)};
     err = clEnqueueNDRangeKernel(queueGain, kernelLinearGain, 1, 0, globalws, localws, 0, NULL, NULL);
     ASSERT_NO_ERROR(err, "clEnqueueNDRangeKernel");
 
@@ -188,8 +189,6 @@ void GpuImageTransformer::equalizeHistogram(int, int)
 
 void GpuImageTransformer::applyFilter(const details::Mask<int>& mask)
 {
-    //return; // KERNEL ZAWIESZA CAŁY SYSTEM!!
-
     cl_int err;
     cl_command_queue queue = clCreateCommandQueue(context, device, 0, &err);
     ASSERT_NO_ERROR(err, "clCreateCommandQueue");
@@ -214,14 +213,15 @@ void GpuImageTransformer::applyFilter(const details::Mask<int>& mask)
     cl_uint height = imageWrapper.height();
     cl_uint maskHeight = static_cast<cl_uint>(mask.height);
     cl_uint maskWidth = static_cast<cl_uint>(mask.width);
+    constexpr cl_uint rowsPerWorkItem = 1;
 
-    err = open_cl_utils::setKernelArgs(kernelApplyFilterInt3x3, input, output, width, height, inputMask, maskHeight, maskWidth);
+    err = open_cl_utils::setKernelArgs(kernelApplyFilterInt, input, output, width, height, inputMask, maskHeight, maskWidth, rowsPerWorkItem);
     ASSERT_NO_ERROR(err, "setKernelArgs");
 
     size_t localws[1] = {preferredWorkGroupSizeMultiple};
-    size_t globalws[1] = {upToMultipleOf(preferredWorkGroupSizeMultiple, height/8)};
+    size_t globalws[1] = {upToMultipleOf(preferredWorkGroupSizeMultiple, height/rowsPerWorkItem)};
     timer.start(QString::fromStdString(fmt::format("GPU applyFilter int {}x{}", mask.height, mask.width)));
-    err = clEnqueueNDRangeKernel(queue, kernelApplyFilterInt3x3, 1, 0, globalws, localws, 0, NULL, NULL);
+    err = clEnqueueNDRangeKernel(queue, kernelApplyFilterInt, 1, 0, globalws, localws, 0, NULL, NULL);
     ASSERT_NO_ERROR(err, "clEnqueueNDRangeKernel");
 
     LOG_INFO("width: {}, height: {}, maskHeight: {}, maskWidth: {}", width, height, maskHeight, maskWidth);
@@ -371,7 +371,7 @@ void GpuImageTransformer::releaseContext()
 {
     cl_int err;
     err = clReleaseContext(context);
-    ASSERT_NO_ERROR(err, "clReleaseContext");
+    //ASSERT_NO_ERROR(err, "clReleaseContext");
 }
 
 void GpuImageTransformer::releaseKernels()

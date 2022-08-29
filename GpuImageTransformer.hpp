@@ -30,7 +30,7 @@ private:
     cl_device_id device;
     cl_kernel kernelRotate90{nullptr};
     cl_kernel kernelLinearGain{nullptr};
-    cl_kernel kernelApplyFilterInt3x3{nullptr};
+    cl_kernel kernelApplyFilterInt{nullptr};
 
     cl_uint maxWorkItemDimensions;
     std::vector<size_t> maxWorkItemSizes;
@@ -55,7 +55,7 @@ private:
             "GpuImageTransformer.cl",
             {{"rotate90",   &kernelRotate90  },
              {"linearGain", &kernelLinearGain},
-             {"applyFilterInt3x3", &kernelApplyFilterInt3x3}}
+             {"applyFilterInt", &kernelApplyFilterInt}}
         }};
 
     void setupKernels();
