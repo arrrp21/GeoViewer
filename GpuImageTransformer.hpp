@@ -26,11 +26,15 @@ public:
 private:
     QImageWrapper& imageWrapper;
 
+    bool isGpuAvailable{false};
+
     cl_context context;
     cl_device_id device;
+
     cl_kernel kernelRotate90{nullptr};
     cl_kernel kernelLinearGain{nullptr};
     cl_kernel kernelApplyFilterInt{nullptr};
+    cl_kernel kernelBackgroundRemoval{nullptr};
 
     cl_uint maxWorkItemDimensions;
     std::vector<size_t> maxWorkItemSizes;
@@ -38,7 +42,10 @@ private:
     size_t maxWorkGroupSize;
     size_t preferredWorkGroupSizeMultiple;
 
-    cl_command_queue queueGain;
+    cl_command_queue queueRotate90{nullptr};
+    cl_command_queue queueGain{nullptr};
+    cl_command_queue queueFilterInt{nullptr};
+    cl_command_queue queueBackgroundRemoval{nullptr};
 
     cl_mem inputGain;
     cl_mem outputGain;
@@ -55,7 +62,8 @@ private:
             "GpuImageTransformer.cl",
             {{"rotate90",   &kernelRotate90  },
              {"linearGain", &kernelLinearGain},
-             {"applyFilterInt", &kernelApplyFilterInt}}
+             {"applyFilterInt", &kernelApplyFilterInt},
+             {"backgroundRemoval", &kernelBackgroundRemoval}}
         }};
 
     void setupKernels();

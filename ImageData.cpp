@@ -1,4 +1,5 @@
 #include "ImageData.hpp"
+#include "Log.hpp"
 
 ImageData::ImageData(std::vector<GprData::DataType>& dataVector, int width, int height)
     : size{static_cast<int>(dataVector.size())}
@@ -128,7 +129,7 @@ void ImageData::trimTop(int row)
 {
     if (row >= height)
     {
-        qDebug() << "ERROR! Cannot trim top, found row: " << row << "is higher than height: " << height;
+        LOG_ERR("ERROR! Cannot trim top, found row: {}is higher than height: {}", row, height);
         return;
     }
 

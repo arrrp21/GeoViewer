@@ -40,6 +40,13 @@ void Panel::setImageHeight(int imageHeight)
     setHeightConstraints();
 }
 
+void Panel::resetGainSliders()
+{
+    QSignalBlocker blocker(this);
+    ui->sliderGainValueLower->setValue(std::lround(defaultGainLower * multiplier));
+    ui->sliderGainValueUpper->setValue(std::lround(defaultGainUpper * multiplier));
+}
+
 std::pair<int, int> Panel::getSliderRangeValues()
 {
     return std::make_pair(ui->sliderRangeLower->value(), ui->sliderRangeUpper->value());
@@ -140,10 +147,6 @@ void Panel::connectSignals()
             ui->sliderRangeUpper->value(),
             ui->sliderGainValueLower->value()/multiplier,
             value/multiplier);
-    });
-
-    connect(ui->buttonEqualizeHist, &QPushButton::clicked, [this] () {
-        emit buttonEqualizeHistClicked(ui->sliderRangeLower->value(), ui->sliderRangeUpper->value());
     });
 
     connect(ui->buttonRotate, &QPushButton::clicked, [this] () { emit buttonRotateClicked(); });

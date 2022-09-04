@@ -15,6 +15,7 @@ SOURCES += \
     GpuImageTransformer.cpp \
     ImageData.cpp \
     ImageLabel.cpp \
+    ImageTransformer.cpp \
     OpenCLErrors.cpp \
     Panel.cpp \
     QImageWrapper.cpp \
@@ -24,10 +25,13 @@ SOURCES += \
     mainwindow.cpp \
     format.cc
 
-LIBS += -L"$$PWD/CL" -lOpenCL
+# LIBS += -L"$$PWD/CL" -lOpenCL
+# LIBS += -L"C:/Windows/System32" -lOpenCL
+LIBS += C:\Windows\System32\OpenCL.dll
 
 INCLUDEPATH += "$$PWD/CL" \
-        "$$PWD/kernels"
+        "$$PWD/kernels" \
+        "C:/Windows/System32"
 
 HEADERS += \
     ChooseMaskDialog.hpp \

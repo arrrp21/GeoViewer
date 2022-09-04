@@ -27,20 +27,27 @@ __kernel void linearGain(
     float gainLower,
 	uint rowsPerWorkItem)
 {
-    int groupFrom = (get_global_id(0) * rowsPerWorkItem) + from;
-	int groupTo = groupFrom + rowsPerWorkItem <= height ? groupFrom + rowsPerWorkItem : height;
+    size_t id = get_global_id(0);
+    size_t groupFrom = from + id * rowsPerWorkItem;
+	size_t groupTo = (groupFrom + rowsPerWorkItem) < height ? groupFrom + rowsPerWorkItem : height;
 
-    float gain = gainLower + (get_global_id(0) * rowsPerWorkItem) * step;
-    uint ushortMax = USHORT_MAX;
+    float gain = gainLower + id * step;
+    int ushortMax = USHORT_MAX;
+	int ushortHalfMax = ushortMax/2;
 
-    int w, h;
-	for (h = groupFrom; h < groupTo; h++)
+    int row, col;
+	for (row = groupFrom; row < groupTo; row++)
 	{
-    	for (w = 0; w < width; w++)
-	    {
-    	    uint tempNewValue = (uint)((float)src[h * width + w] * gain);
-            ushort newValue = tempNewValue <= ushortMax ? tempNewValue : ushortMax;
-    	    dest[h * width + w] = newValue;
+    	for (col = 0; col < width; col++)
+	    {		
+		    int newValue = (int)(((int)src[row * width + col] - ushortHalfMax) * gain);
+			newValue += ushortHalfMax;
+			if (newValue > ushortMax)
+			    newValue = ushortMax;
+			if (newValue < 0)
+			    newValue = 0;
+		
+    	    dest[row * width + col] = (ushort)newValue;
         }
 		gain += step;
     }
@@ -57,68 +64,28 @@ __kernel void applyFilterInt(
     uint maskWidth,
 	uint rowsPerWorkItem)
 {
-    uint ushortMax = USHORT_MAX;
+    int ushortMax = USHORT_MAX;
     size_t midHeight = maskHeight/2;
 	size_t midWidth = maskWidth/2;
-    size_t row, col, i, j;
+    size_t row, col, i, j, r, c;
 	
     size_t id = get_global_id(0);
     size_t from = midHeight + id * rowsPerWorkItem;
 	size_t to = (from + rowsPerWorkItem) <= (height - midHeight) ? (from + rowsPerWorkItem) : (height - midHeight);
 	
-	/*int mask11 = mask[0];
-	int mask12 = mask[1];
-	int mask13 = mask[2];
-	int mask21 = mask[3];
-	int mask22 = mask[4];
-	int mask23 = mask[5];
-	int mask31 = mask[6];
-	int mask32 = mask[7];
-	int mask33 = mask[8];*/
-
+	int value;
     for (row = from; row < to; row++)
 	{
 	    for (col = midWidth; col < width - midWidth; col++)
 		{
-		    int value = 0;
-			
-			/*int r, c;
-			
-			r = row - 1;
-			c = col - 1;
-			value += src[r * width + c] * mask11;
-			
-			c++;
-			value += src[r * width + c] * mask12;
-			
-			c++;
-			value += src[r * width + c] * mask13;
-			
-			
-			r++;
-			c = col - 1;
-			value += src[r * width + c] * mask21;
-			c++;
-			value += src[r * width + c] * mask22;
-			c++;
-			value += src[r * width + c] * mask23;
-			
-			r++;
-			c = col - 1;
-			value += src[r * width + c] * mask31;
-			c++;
-			value += src[r * width + c] * mask32;
-			c++;
-			value += src[r * width + c] * mask33;*/
-
-			
+		    value = 0;
 			for (i = 0; i < maskHeight; i++)
 			{
 			    for (j = 0; j < maskWidth; j++)
 				{
-					int r = row + i - midHeight;
-					int c = col + j - midWidth;
-				    value += src[r * width + c] * mask[i * maskWidth + j];
+					r = row + i - midHeight;
+					c = col + j - midWidth;
+				    value += ((int)(src[r * width + c]) * mask[i * maskWidth + j]);
 				}
 			}
 			if (value > ushortMax)
@@ -126,6 +93,43 @@ __kernel void applyFilterInt(
 			else if (value <= 0)
 			    value = 0;
 		    dest[row * width + col] = (ushort)value;
+		}
+	}
+}
+
+__kernel void backgroundRemoval(
+    __global ushort* src,
+	__global ushort* dest,
+	uint width,
+	uint height,
+	uint rowsPerWorkItem)
+{
+    int ushortMax = USHORT_MAX;
+    int ushortHalfMax = ushortMax/2;
+
+    size_t id = get_global_id(0);
+    size_t from = id * rowsPerWorkItem;
+    size_t to = (from + rowsPerWorkItem) < height ? from + rowsPerWorkItem : height;
+	
+	size_t row, col;
+	int sum;
+	for (row = from; row < to; row++)
+	{
+	    for (col = 0u; col < width; col++)
+		{
+		    sum += ((int)src[row * width + col] - ushortHalfMax);
+		}
+		int mean = (int)round(((double)sum)/width);;
+		
+		for (col = 0u; col < width; col++)
+		{
+		    int value = (int)src[row * width + col] - mean;
+			if (value < 0)
+                value = 0;
+            else if (value > ushortMax)
+                value = ushortMax;
+			
+			dest[row * width + col] = (ushort)value;
 		}
 	}
 }

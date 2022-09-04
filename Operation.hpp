@@ -8,6 +8,7 @@ enum class Operation : std::uint8_t
 {
     none = 0,
     equalizeHist = 1,
-    gain = 2
+    gain = 2,
+    gamma = 3
 };
 } // namespace image_processing

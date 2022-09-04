@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>960</width>
+    <width>948</width>
     <height>60</height>
    </rect>
   </property>
@@ -96,25 +96,12 @@
     </property>
    </widget>
   </widget>
-  <widget class="QPushButton" name="buttonEqualizeHist">
-   <property name="geometry">
-    <rect>
-     <x>720</x>
-     <y>36</y>
-     <width>121</width>
-     <height>24</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Equalize histogram</string>
-   </property>
-  </widget>
   <widget class="QPushButton" name="buttonReset">
    <property name="geometry">
     <rect>
-     <x>720</x>
+     <x>820</x>
      <y>8</y>
-     <width>93</width>
+     <width>80</width>
      <height>24</height>
     </rect>
    </property>
@@ -125,7 +112,7 @@
   <widget class="QPushButton" name="buttonRotate">
    <property name="geometry">
     <rect>
-     <x>860</x>
+     <x>910</x>
      <y>6</y>
      <width>28</width>
      <height>28</height>
@@ -146,7 +133,7 @@
     <rect>
      <x>280</x>
      <y>0</y>
-     <width>160</width>
+     <width>230</width>
      <height>60</height>
     </rect>
    </property>
@@ -158,7 +145,7 @@
      <rect>
       <x>10</x>
       <y>18</y>
-      <width>100</width>
+      <width>180</width>
       <height>16</height>
      </rect>
     </property>
@@ -174,7 +161,7 @@
      <rect>
       <x>10</x>
       <y>36</y>
-      <width>100</width>
+      <width>180</width>
       <height>16</height>
      </rect>
     </property>
@@ -185,7 +172,7 @@
    <widget class="QLabel" name="labelGainValueLower">
     <property name="geometry">
      <rect>
-      <x>120</x>
+      <x>200</x>
       <y>16</y>
       <width>36</width>
       <height>16</height>
@@ -198,7 +185,7 @@
    <widget class="QLabel" name="labelGainValueUpper">
     <property name="geometry">
      <rect>
-      <x>120</x>
+      <x>200</x>
       <y>34</y>
       <width>36</width>
       <height>16</height>
@@ -212,7 +199,7 @@
   <widget class="QGroupBox" name="groupBoxOperation">
    <property name="geometry">
     <rect>
-     <x>460</x>
+     <x>520</x>
      <y>0</y>
      <width>140</width>
      <height>60</height>
@@ -226,7 +213,7 @@
      <rect>
       <x>10</x>
       <y>18</y>
-      <width>120</width>
+      <width>131</width>
       <height>16</height>
      </rect>
     </property>
@@ -261,7 +248,7 @@
   <widget class="QPushButton" name="buttonApply">
    <property name="geometry">
     <rect>
-     <x>620</x>
+     <x>670</x>
      <y>8</y>
      <width>60</width>
      <height>24</height>
@@ -274,7 +261,7 @@
   <widget class="QPushButton" name="buttonCancel">
    <property name="geometry">
     <rect>
-     <x>620</x>
+     <x>670</x>
      <y>36</y>
      <width>60</width>
      <height>24</height>

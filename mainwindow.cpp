@@ -278,7 +278,7 @@ void MainWindow::on_actionRotate90Triggered(bool)
     rotate90();
 }
 
-void MainWindow::on_actionHighPassFilterTriggered(bool)
+void MainWindow::on_actionApplyFilterTriggered(bool)
 {
     if (chooseMaskDialog->exec() == QDialog::Accepted)
     {
@@ -352,7 +352,7 @@ void MainWindow::on_mouseMoved(int x, int y)
     GprData::DataType color = imageWrapper->getColor(x, y);
     ui->statusbar->showMessage(QString::fromStdString(
         fmt::format("x: {}  y: {}  color: {}  scale: {:.2f}  width: {}  height: {}",
-                    x, y, color, scaleFactor, imageLabel->width(), imageLabel->height())));
+                    x, y, color, scaleFactor, imageWrapper->width(), imageWrapper->height())));
 }
 
 void MainWindow::on_sliderGainChanged(int from, int to, double lowerGain, double upperGain)
@@ -381,16 +381,11 @@ void MainWindow::on_sliderRangeChanged(int from, int to)
     }
 }
 
-void MainWindow::on_buttonEqualizeHistClicked(int from, int to)
-{
-    imageTransformer->equalizeHistogram(from, to);
-    refreshImage();
-}
-
 void MainWindow::on_buttonResetClicked()
 {
     imageWrapper->resetImage();
     panel->setImageHeight(imageWrapper->height());
+    panel->resetGainSliders();
     scaleFactor = 1.0f;
     drawImage();
     setTopTrimmed(false);
@@ -495,7 +490,7 @@ void MainWindow::connectSignals()
     connect(ui->actionRedo,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRedoTriggered(bool))                       );
     connect(ui->actionRotate90,           SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRotate90Triggered(bool))                   );
     connect(ui->actionGainPanel,          SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGainPannelToggled(bool))                   );
-    connect(ui->actionHighPassFilter,     SIGNAL(triggered(bool)),                             this,  SLOT(on_actionHighPassFilterTriggered(bool))             );
+    connect(ui->actionApplyFilter,        SIGNAL(triggered(bool)),                             this,  SLOT(on_actionApplyFilterTriggered(bool))                );
     connect(ui->actionBackgroundRemoval,  SIGNAL(triggered(bool)),                             this,  SLOT(on_actionBackgroundRemovalTriggered(bool))          );
     connect(ui->actionTrimTop,            SIGNAL(triggered(bool)),                             this,  SLOT(on_actionTrimTopTriggered(bool))                    );
     connect(ui->actionGpuAcceleration,    SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGpuAccelerationToggled(bool))              );
@@ -504,7 +499,6 @@ void MainWindow::connectSignals()
     connect(imageLabel,                   SIGNAL(mouseMoved(int,int)),                         this,  SLOT(on_mouseMoved(int,int))                             );
     connect(panel,                        SIGNAL(buttonRotateClicked()),                       this,  SLOT(on_buttonRotateClicked())                           );
     connect(panel,                        SIGNAL(sliderGainChanged(int, int, double, double)), this,  SLOT(on_sliderGainChanged(int, int, double, double))     );
-    connect(panel,                        SIGNAL(buttonEqualizeHistClicked(int, int)),         this,  SLOT(on_buttonEqualizeHistClicked(int, int))             );
     connect(panel,                        SIGNAL(buttonResetClicked()),                        this,  SLOT(on_buttonResetClicked())                            );
     connect(panel,                        SIGNAL(rbEqualizeHistChecked()),                     this,  SLOT(on_rbEqualizeHistChecked())                         );
     connect(panel,                        SIGNAL(rbGainChecked()),                             this,  SLOT(on_rbGainChecked())                                 );

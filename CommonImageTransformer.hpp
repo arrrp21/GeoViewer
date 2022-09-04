@@ -24,18 +24,7 @@ public:
 private:
     QImageWrapper& imageWrapper;
 
-    LookupTable createLut(GprData::DataType min, GprData::DataType max);
-    LookupTable createLut(float contrast);
-
-    GprData::DataType min(int from, int to, const ImageData& imageData);
-    GprData::DataType max(int from, int to, const ImageData& imageData);
-
     template <class MaskType>
     void applyFilter(const MaskType& mask);
-    void fillEdges(ImageData&, int, int);
-    void fillUpperEdge(ImageData&, int);
-    void fillRightEdge(ImageData&, int, int);
-    void fillLowerEdge(ImageData&, int);
-    void fillLeftEdge(ImageData&, int, int);
 };
 } // namespace image_transforming

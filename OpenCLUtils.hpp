@@ -29,7 +29,7 @@ cl_int setKernelArgs(cl_kernel kernel, cl_uint arg_index, T arg, Args... args)
 template <typename ... Args>
 cl_int setKernelArgs(cl_kernel kernel, Args... args)
 {
-    details::setKernelArgs(kernel, 0, args...);
+    return details::setKernelArgs(kernel, 0, args...);
 }
 
 } // namespace open_cl_utils

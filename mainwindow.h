@@ -81,7 +81,7 @@ public slots:
     void on_actionUndoTriggered(bool);
     void on_actionRedoTriggered(bool);
     void on_actionRotate90Triggered(bool);
-    void on_actionHighPassFilterTriggered(bool);
+    void on_actionApplyFilterTriggered(bool);
     void on_actionBackgroundRemovalTriggered(bool);
     void on_actionTrimTopTriggered(bool);
 
@@ -92,7 +92,6 @@ public slots:
 
     void on_sliderGainChanged(int, int, double, double);
     void on_sliderRangeChanged(int, int);
-    void on_buttonEqualizeHistClicked(int, int);
     void on_buttonResetClicked();
     void on_buttonRotateClicked();
     void on_rbEqualizeHistChecked();
