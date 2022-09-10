@@ -73,7 +73,7 @@ private:
     void resetOperation();
 
 public slots:
-    void on_actionGainPannelToggled(bool);
+    void on_actionEnablePanelToggled(bool);
     void on_actionOpenTriggered(bool);
     void on_actionSaveTriggered(bool);
     void on_actionCloseTriggered(bool);

@@ -33,7 +33,7 @@ std::optional<std::string> readData(
     while (not inputTextStream.atEnd())
     {
         QString strValue{inputTextStream.readLine()};
-        GprData::DataType value{static_cast<GprData::DataType>(strValue.toInt(&isOk) + std::numeric_limits<std::int16_t>::max())};
+        GprData::DataType value{static_cast<GprData::DataType>(strValue.toInt(&isOk) + std::numeric_limits<std::int16_t>::max() + 1)};
         if (not isOk)
         {
             return fmt::format("Invalid DATA value (line: {})", inputTextStream.getLineCount());

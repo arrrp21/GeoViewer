@@ -112,7 +112,7 @@ void MainWindow::saveImage()
         {
             for (int col = 0; col < imageWrapper->width(); col++)
             {
-                stream << imageData.at(row, col) << " ";
+                stream << static_cast<int>(imageData.at(row, col)) - static_cast<int>(std::numeric_limits<GprData::DataType>::max())/2 - 1 << " ";
             }
             stream << "\n";
         }
@@ -136,12 +136,7 @@ void MainWindow::closeImage()
 
 void MainWindow::scaleImage(float factor)
 {
-    const float newScaleFactor = scaleFactor * factor;
-
-    if (newScaleFactor >= maxScaleFactor or newScaleFactor <= minScaleFactor)
-        return;
-
-    scaleFactor = newScaleFactor;
+    scaleFactor = factor;
     QSize newSize = scaleFactor * imageLabel->pixmap(Qt::ReturnByValue).size();
     newSize.setHeight(newSize.height() + ImageLabel::bottomAxisHeight);
     newSize.setWidth(newSize.width() + ImageLabel::leftAxisWidth);
@@ -212,7 +207,7 @@ void MainWindow::on_actionOpenTriggered(bool)
             imageLabel->setXStep(gprData.X_STEP);
             imageLabel->setYStep(gprData.RANGE / 2 * gprData.PROP_VEL / gprData.N_ACQ_SAMPLE);
             drawImage();
-            ui->actionGainPanel->setChecked(true);
+            ui->actionEnablePanel->setChecked(true);
             setTopTrimmed(false);
             panel->setImageHeight(imageWrapper->height());
             panel->show();
@@ -268,7 +263,7 @@ void MainWindow::on_actionRedoTriggered(bool)
     }
 }
 
-void MainWindow::on_actionGainPannelToggled(bool checked)
+void MainWindow::on_actionEnablePanelToggled(bool checked)
 {
     panel->setVisible(checked);
 }
@@ -322,9 +317,14 @@ void MainWindow::on_actionGpuAccelerationToggled(bool toggled)
 void MainWindow::on_mouseWheelUsed(QPoint angleDelta)
 {
     float factor = (angleDelta.y() > 0) ? (1.0f + scaleFactorStep) : (1.0f - scaleFactorStep);
-    scaleImage(factor);
-    adjustScrollBar(scrollArea->horizontalScrollBar(), factor);
-    adjustScrollBar(scrollArea->verticalScrollBar(), factor);
+    float newScaleFactor = factor * scaleFactor;
+
+    if (newScaleFactor < maxScaleFactor and newScaleFactor > minScaleFactor)
+    {
+        scaleImage(newScaleFactor);
+        adjustScrollBar(scrollArea->horizontalScrollBar(), factor);
+        adjustScrollBar(scrollArea->verticalScrollBar(), factor);
+    }
 }
 
 void MainWindow::on_mousePressedMoved(int x, int y)
@@ -349,10 +349,10 @@ void MainWindow::on_mouseMoved(int x, int y)
     x = std::lround(x / scaleFactor);
     y = std::lround(y / scaleFactor);
 
-    GprData::DataType color = imageWrapper->getColor(x, y);
+    int signalAmplitude = static_cast<int>(imageWrapper->getColor(x, y)) - std::numeric_limits<GprData::DataType>::max()/2 - 1;
     ui->statusbar->showMessage(QString::fromStdString(
-        fmt::format("x: {}  y: {}  color: {}  scale: {:.2f}  width: {}  height: {}",
-                    x, y, color, scaleFactor, imageWrapper->width(), imageWrapper->height())));
+        fmt::format("x: {}  y: {}  signal amplitude: {}  scale: {:.2f}  width: {}  height: {}",
+                    x, y, signalAmplitude, scaleFactor, imageWrapper->width(), imageWrapper->height())));
 }
 
 void MainWindow::on_sliderGainChanged(int from, int to, double lowerGain, double upperGain)
@@ -489,7 +489,7 @@ void MainWindow::connectSignals()
     connect(ui->actionUndo,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionUndoTriggered(bool))                       );
     connect(ui->actionRedo,               SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRedoTriggered(bool))                       );
     connect(ui->actionRotate90,           SIGNAL(triggered(bool)),                             this,  SLOT(on_actionRotate90Triggered(bool))                   );
-    connect(ui->actionGainPanel,          SIGNAL(toggled(bool)),                               this,  SLOT(on_actionGainPannelToggled(bool))                   );
+    connect(ui->actionEnablePanel,        SIGNAL(toggled(bool)),                               this,  SLOT(on_actionEnablePanelToggled(bool))                  );
     connect(ui->actionApplyFilter,        SIGNAL(triggered(bool)),                             this,  SLOT(on_actionApplyFilterTriggered(bool))                );
     connect(ui->actionBackgroundRemoval,  SIGNAL(triggered(bool)),                             this,  SLOT(on_actionBackgroundRemovalTriggered(bool))          );
     connect(ui->actionTrimTop,            SIGNAL(triggered(bool)),                             this,  SLOT(on_actionTrimTopTriggered(bool))                    );

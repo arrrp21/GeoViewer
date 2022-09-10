@@ -40,6 +40,21 @@ GpuImageTransformer::GpuImageTransformer(QImageWrapper &imageWrapper)
     std::vector<cl::Platform> platforms;
     cl::Platform::get(&platforms);
 
+    LOG_INFO("Available platforms:");
+    for (const auto& platform : platforms)
+    {
+        LOG_INFO("{}", platform.getInfo<CL_PLATFORM_NAME>());
+
+        std::vector<cl::Device> devices;
+        platforms.front().getDevices(CL_DEVICE_TYPE_GPU, &devices);
+
+        LOG_INFO("  Available devices:");
+        for (const auto& device : devices)
+        {
+            LOG_INFO("    {}", device.getInfo<CL_DEVICE_NAME>());
+        }
+    }
+
     std::vector<cl::Device> devices;
     platforms.front().getDevices(CL_DEVICE_TYPE_GPU, &devices);
 
