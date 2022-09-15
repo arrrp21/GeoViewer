@@ -12,7 +12,7 @@ public:
     void stop();
 
 private:
-    std::chrono::time_point<std::chrono::high_resolution_clock> startPoint{};
+    std::chrono::time_point<std::chrono::steady_clock> startPoint{};
     std::optional<QString> m_message{std::nullopt};
     bool isMeasurementOngoing{false};
 };

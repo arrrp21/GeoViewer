@@ -10,27 +10,27 @@ void Timer::start(std::optional<std::string> message)
         m_message = QString::fromStdString(message.value());
     }
     isMeasurementOngoing = true;
-    startPoint = std::chrono::high_resolution_clock::now();
+    startPoint = std::chrono::steady_clock::now();
 }
 
 void Timer::stop()
 {
+    const auto stopPoint = std::chrono::steady_clock::now();
     if (not isMeasurementOngoing)
     {
         LOG_WRN("Timer::stop called when time measurement not started!");
         return;
     }
 
-    const auto stopPoint = std::chrono::high_resolution_clock::now();
-    auto executionTime = std::chrono::duration_cast<std::chrono::milliseconds>(stopPoint - startPoint);
+    auto executionTime = std::chrono::duration_cast<std::chrono::microseconds>(stopPoint - startPoint);
 
     std::ostringstream out;
-    out << executionTime.count();
+    out << executionTime.count()/1000.0;
     const QString duration = QString::fromStdString(out.str());
     QString msg = "";
     if (m_message)
     {
-        msg = m_message.value() + " Execution time: " + duration + "ms";
+        msg = m_message.value() + " Execution time: " + duration + " ms";
         m_message = std::nullopt;
     }
     else

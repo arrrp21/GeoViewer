@@ -41,7 +41,7 @@ public:
     virtual void commitChanges(Operation) = 0;
 
 protected:
-    Timer timer{};
+    //Timer timer{};
 
     void equalizeHistogram(QImageWrapper&, int from, int to);
     void trimTop(QImageWrapper&);

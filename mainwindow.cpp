@@ -426,6 +426,7 @@ void MainWindow::on_buttonApplyClicked()
 
 void MainWindow::on_buttonCancelClicked()
 {
+    imageTransformer->commitChanges(operation);
     State state = stateMachine->latestState();
     restoreState(state);
     resetOperation();

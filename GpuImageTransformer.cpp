@@ -10,6 +10,20 @@
 
 namespace image_transforming
 {
+namespace
+{
+void printExecutionTime(cl_event event, std::string info)
+{
+    cl_ulong time_start;
+    cl_ulong time_end;
+
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
+
+    double nanoSeconds = time_end - time_start;
+    LOG_INFO("GPU {} kernel only: {} ms", info, nanoSeconds / 1000000.0);
+}
+} // namespace
 
 bool GpuImageTransformer::checkError(cl_int err, std::optional<QString> functionName)
 {
@@ -163,6 +177,7 @@ void GpuImageTransformer::rotate90()
 
 void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUpper)
 {
+    timer.start("GPU linear gain");
     if (from < 0 or to >= imageWrapper.height() or from >= to)
         return;
 
@@ -197,8 +212,11 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
 
     size_t localws[1] = {preferredWorkGroupSizeMultiple};
     size_t globalws[1] = {upToMultipleOf(preferredWorkGroupSizeMultiple, (to - from + 1)/rowsPerWorkItem + 1u)};
-    err = clEnqueueNDRangeKernel(queueGain, kernelLinearGain, 1, 0, globalws, localws, 0, NULL, NULL);
+    cl_event event;
+    err = clEnqueueNDRangeKernel(queueGain, kernelLinearGain, 1, 0, globalws, localws, 0, NULL, &event);
     ASSERT_NO_ERROR(err, "clEnqueueNDRangeKernel");
+    err = clWaitForEvents(1, &event);
+    ASSERT_NO_ERROR(err, "clWaitForEvents");
 
     ImageData newImageData{imageWrapper.getPreviousImageData()};
     GprData::DataType* newRawData = newImageData.getData();
@@ -211,8 +229,13 @@ void GpuImageTransformer::gain(int from, int to, double gainLower, double gainUp
         static_cast<void*>(&finalImageData.at(from, 0)),
         static_cast<void*>(&newImageData.at(from, 0)),
         width * (to - from) * sizeof(GprData::DataType));
+    timer.stop();
 
     imageWrapper.setNewImage(std::move(finalImageData));
+
+    printExecutionTime(event, "Linear gain");
+    err = clReleaseEvent(event);
+    ASSERT_NO_ERROR(err, "clReleaseEvent");
 }
 
 void GpuImageTransformer::equalizeHistogram(int from, int to)
@@ -253,10 +276,11 @@ void GpuImageTransformer::applyFilter(const details::Mask<int>& mask)
     size_t localws[1] = {preferredWorkGroupSizeMultiple};
     size_t globalws[1] = {upToMultipleOf(preferredWorkGroupSizeMultiple, height/rowsPerWorkItem)};
     timer.start(fmt::format("GPU applyFilter int {}x{}", mask.height, mask.width));
-    err = clEnqueueNDRangeKernel(queueFilterInt, kernelApplyFilterInt, 1, 0, globalws, localws, 0, NULL, NULL);
+    cl_event event;
+    err = clEnqueueNDRangeKernel(queueFilterInt, kernelApplyFilterInt, 1, 0, globalws, localws, 0, NULL, &event);
     ASSERT_NO_ERROR(err, "clEnqueueNDRangeKernel");
-
-    LOG_INFO("width: {}, height: {}, maskHeight: {}, maskWidth: {}", width, height, maskHeight, maskWidth);
+    err = clWaitForEvents(1, &event);
+    ASSERT_NO_ERROR(err, "clWaitForEvents");
 
     ImageData newImageData{imageWrapper.getPreviousImageData()};
     GprData::DataType* newRawData = newImageData.getData();
@@ -268,6 +292,10 @@ void GpuImageTransformer::applyFilter(const details::Mask<int>& mask)
     int midWidth = mask.width/2;
     fillEdges(newImageData, midHeight, midWidth);
     imageWrapper.setNewImage(std::move(newImageData));
+
+    printExecutionTime(event, fmt::format("Apply filter int {}x{}", mask.height, mask.width));
+    err = clReleaseEvent(event);
+    ASSERT_NO_ERROR(err, "clReleaseEvent");
 
     err = clReleaseMemObject(input);
     ASSERT_NO_ERROR(err, "clReleaseMemObject");
@@ -289,6 +317,7 @@ void GpuImageTransformer::applyFilter(const Mask &mask)
 
 void GpuImageTransformer::backgroundRemoval()
 {
+    timer.start("GPU background removal");
     cl_int err;
 
     const GprData::DataType* src = imageWrapper.getPreviousImageData().getData();
@@ -311,20 +340,28 @@ void GpuImageTransformer::backgroundRemoval()
 
     size_t localws[1] = {preferredWorkGroupSizeMultiple};
     size_t globalws[1] = {upToMultipleOf(preferredWorkGroupSizeMultiple, height/rowsPerWorkItem)};
-    err = clEnqueueNDRangeKernel(queueBackgroundRemoval, kernelBackgroundRemoval, 1, 0, globalws, localws, 0, NULL, NULL);
+    cl_event event;
+    err = clEnqueueNDRangeKernel(queueBackgroundRemoval, kernelBackgroundRemoval, 1, 0, globalws, localws, 0, NULL, &event);
     ASSERT_NO_ERROR(err, "clEnqueueNDRangeKernel");
+    err = clWaitForEvents(1, &event);
+    ASSERT_NO_ERROR(err, "clWaitForEvents");
 
     ImageData newImageData{imageWrapper.getPreviousImageData()};
     GprData::DataType* newRawData = newImageData.getData();
     err = clEnqueueReadBuffer(queueBackgroundRemoval, output, CL_TRUE, 0, sizeInBytes, (void*)newRawData, NULL, NULL, NULL);
     ASSERT_NO_ERROR(err, "clEnqueueReadBuffer");
 
-    imageWrapper.setNewImage(std::move(newImageData));
-
     err = clReleaseMemObject(input);
     ASSERT_NO_ERROR(err, "clReleaseMemObject");
     err = clReleaseMemObject(output);
     ASSERT_NO_ERROR(err, "clReleaseMemObject");
+    timer.stop();
+
+    printExecutionTime(event, "Background removal");
+    err = clReleaseEvent(event);
+    ASSERT_NO_ERROR(err, "clReleaseEvent");
+
+    imageWrapper.setNewImage(std::move(newImageData));
 }
 
 void GpuImageTransformer::trimTop()
@@ -379,13 +416,13 @@ void GpuImageTransformer::setupQueues()
     queueRotate90 = clCreateCommandQueue(context, device, 0, &err);
     ASSERT_NO_ERROR(err, "clCreateCommandQueue queueRotate90");
 
-    queueGain = clCreateCommandQueue(context, device, 0, &err);
+    queueGain = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
     ASSERT_NO_ERROR(err, "clCreateCommandQueue queueGain");
 
-    queueFilterInt = clCreateCommandQueue(context, device, 0, &err);
+    queueFilterInt = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
     ASSERT_NO_ERROR(err, "clCreateCommandQueue queueFilterInt");
 
-    queueBackgroundRemoval = clCreateCommandQueue(context, device, 0, &err);
+    queueBackgroundRemoval = clCreateCommandQueue(context, device, CL_QUEUE_PROFILING_ENABLE, &err);
     ASSERT_NO_ERROR(err, "clCreateCommandQueue queueBackgroundRemoval");
 }
 

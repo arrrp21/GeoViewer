@@ -28,6 +28,7 @@ void CommonImageTransformer::rotate90()
 
 void CommonImageTransformer::gain(int from, int to, double gainLower, double gainUpper)
 {
+    timer.start("CPU linear gain");
     if (from < 0 or to >= imageWrapper.height())
         return;
 
@@ -53,6 +54,7 @@ void CommonImageTransformer::gain(int from, int to, double gainLower, double gai
         }
         gain += step;
     }
+    timer.stop();
 
     imageWrapper.setNewImage(std::move(newImageData));
 }
@@ -69,6 +71,7 @@ void CommonImageTransformer::applyFilter(const Mask& mask)
 
 void CommonImageTransformer::backgroundRemoval()
 {
+    timer.start("CPU background removal");
     int height = imageWrapper.height();
     int width = imageWrapper.width();
 
@@ -94,6 +97,7 @@ void CommonImageTransformer::backgroundRemoval()
             newImageData.at(i, j) = value;
         }
     }
+    timer.stop();
 
     imageWrapper.setNewImage(std::move(newImageData));;
 }
@@ -135,10 +139,10 @@ void CommonImageTransformer::applyFilter(const MaskType& mask)
             newImageData.at(row, col) = static_cast<GprData::DataType>(value);
         }
     }
-    timer.stop();
 
     fillEdges(newImageData, midHeight, midWidth);
 
+    timer.stop();
 
     imageWrapper.setNewImage(std::move(newImageData));
 }

@@ -1,6 +1,5 @@
 #pragma once
 #include "ImageTransformer.hpp"
-#include "Timer.hpp"
 
 class ImageData;
 class QImageWrapper;
@@ -23,6 +22,7 @@ public:
 
 private:
     QImageWrapper& imageWrapper;
+    Timer timer{};
 
     template <class MaskType>
     void applyFilter(const MaskType& mask);

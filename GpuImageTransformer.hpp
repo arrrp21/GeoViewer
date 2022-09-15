@@ -25,6 +25,7 @@ public:
 
 private:
     QImageWrapper& imageWrapper;
+    Timer timer{};
 
     bool isGpuAvailable{false};
 
